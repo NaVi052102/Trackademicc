@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Trackademic.Core", "Trackademic.Core\Trackademic.Core.csproj", "{159D52C3-D665-43D6-8F93-E4AA27B17E43}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Trackademic.Data", "Trackademic.Data\Trackademic.Data.csproj", "{44DBCCD9-2FC6-4E2D-A640-EFA84E7B30DF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Trackademic.Services", "Trackademic.Services\Trackademic.Services.csproj", "{5337DE8F-E2C7-468A-A757-5DE1F84E133E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Trackademic.WebApp", "Trackademic.WebApp\Trackademic.WebApp.csproj", "{A3EF4994-BED2-446F-B34F-74290400D690}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{159D52C3-D665-43D6-8F93-E4AA27B17E43}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{159D52C3-D665-43D6-8F93-E4AA27B17E43}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{159D52C3-D665-43D6-8F93-E4AA27B17E43}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{159D52C3-D665-43D6-8F93-E4AA27B17E43}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44DBCCD9-2FC6-4E2D-A640-EFA84E7B30DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44DBCCD9-2FC6-4E2D-A640-EFA84E7B30DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44DBCCD9-2FC6-4E2D-A640-EFA84E7B30DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44DBCCD9-2FC6-4E2D-A640-EFA84E7B30DF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5337DE8F-E2C7-468A-A757-5DE1F84E133E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5337DE8F-E2C7-468A-A757-5DE1F84E133E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5337DE8F-E2C7-468A-A757-5DE1F84E133E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5337DE8F-E2C7-468A-A757-5DE1F84E133E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3EF4994-BED2-446F-B34F-74290400D690}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3EF4994-BED2-446F-B34F-74290400D690}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3EF4994-BED2-446F-B34F-74290400D690}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3EF4994-BED2-446F-B34F-74290400D690}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
