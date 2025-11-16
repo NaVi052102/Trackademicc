@@ -3,11 +3,13 @@ using System.Collections.Generic;
 
 namespace Trackademic.Data.Models;
 
-public partial class Schoolyear
+public partial class Semester
 {
     public long Id { get; set; }
 
-    public string YearName { get; set; } = null!;
+    public long SchoolYearId { get; set; }
+
+    public string SemesterName { get; set; } = null!;
 
     public DateOnly? DateStarted { get; set; }
 
@@ -15,5 +17,5 @@ public partial class Schoolyear
 
     public virtual ICollection<Class> Classes { get; set; } = new List<Class>();
 
-    public virtual ICollection<Semester> Semesters { get; set; } = new List<Semester>();
+    public virtual Schoolyear SchoolYear { get; set; } = null!;
 }
