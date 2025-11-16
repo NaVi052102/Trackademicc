@@ -1,0 +1,49 @@
+﻿@page
+@model Trackademic.WebApp.Pages.Student.StudentClassModel
+@{
+    ViewData["Title"] = "Classes";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/student-class.css" asp-append-version="true" />
+}
+
+<div class="classes-header">
+    <h1 class="classes-title">Classes</h1>
+    <div class="classes-header-right">
+        <div class="search-bar">
+            <i class="bi bi-search"></i>
+            <input type="text" class="form-control" placeholder="Search">
+        </div>
+        <a href="#" class="text-secondary fs-4"><i class="bi bi-bell"></i></a>
+    </div>
+</div>
+
+<div class="classes-actions">
+    <form method="get" class="classes-filters">
+        <select asp-for="SchoolYear" asp-items="Model.SchoolYears" class="form-select" style="width: 150px;"></select>
+        <select asp-for="Semester" asp-items="Model.Semesters" class="form-select" style="width: 150px;"></select>
+        <select asp-for="Status" asp-items="Model.Statuses" class="form-select" style="width: 150px;"></select>
+        <button type="submit" class="btn btn-sm btn-filter">Filter</button>
+    </form>
+</div>
+
+<div class="class-grid">
+    @foreach (var cls in Model.Classes)
+    {
+        <div class="class-card">
+            <div class="class-card-content">
+                <img src="@cls.ImageUrl" alt="@cls.Title" class="class-card-image" />
+                <div class.class-card-info">
+                    <h5>@cls.Title</h5>
+                    <p>@cls.StudentCount Students</p>
+                </div>
+            </div>
+            <div class="class-card-footer">
+                <a href="#">View Roster</a>
+            </div>
+        </div>
+    }
+</div>
+
+<div style="height: 50px;"></div>

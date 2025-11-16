@@ -1,0 +1,154 @@
+﻿/* Global styles */
+body {
+    margin: 0;
+    font-family: 'Inter', Arial, sans-serif; /* Using Inter font if available, otherwise Arial */
+    background-color: #FFFFFF;
+}
+
+/* Container holding left and right panels */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Left panel with logo */
+.left-panel {
+    width: 728px;
+    height: 721px;
+    background-color: #F6F7EE;
+    border-radius: 25px;
+    box-shadow: 6px 4px 50px 1px rgba(0, 0, 0, 0.25);
+    position: relative; /* allows absolute positioning of children */
+}
+
+/* Logo positioning inside left panel */
+.logo {
+    position: absolute; /* enables X-Y positioning */
+    top: 50%; /* vertically center */
+    left: 51%; /* horizontally center */
+    transform: translate(-50%, -50%); /* exact centering */
+    width: 840px;
+    height: 831px;
+    object-fit: contain;
+}
+
+/* Right panel with form */
+.right-panel {
+    width: 538px;
+    height: 594px;
+    background-color: #F5F5F5;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px 60px;
+    box-sizing: border-box;
+}
+
+/* Login title */
+.login-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: #1F201D;
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+/* Role selection buttons */
+.role-buttons {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+    gap: -5px;
+}
+
+.role-btn {
+    width: 130px;
+    height: 42px;
+    border-radius: 5px;
+    border: 1px solid #1F201F;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #F5F5F5;
+    color: #1F201F;
+    transition: 0.3s;
+}
+
+    /* Active state for role button */
+    .role-btn.active {
+        background-color: #1F201F;
+        color: #FFFFFF;
+        border: 2px solid #1F201F;
+    }
+
+/* Input fields */
+.input-field {
+    width: 100%;
+    height: 45px;
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #1F201F;
+    font-size: 15px;
+    box-sizing: border-box;
+}
+
+/* Forgot password link */
+.forgot-password {
+    font-size: 13px;
+    color: #1F201F;
+    text-decoration: none;
+    float: right;
+    margin-bottom: 25px;
+}
+
+/* Login button */
+.login-btn {
+    width: 100%;
+    height: 75px;
+    background-color: #1F201F;
+    color: #FFFFFF;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+    .login-btn:hover {
+        opacity: 0.9;
+    }
+
+/* --- Password Toggle Eye Icon --- */
+.toggle-password {
+    background-color: transparent; /* Make background invisible */
+    border: none; /* Remove border */
+    cursor: pointer; /* Indicate it's clickable */
+    position: absolute; /* Position relative to .input-group */
+    right: 10px; /* Adjust horizontal position */
+    top: 50%; /* Center vertically */
+    transform: translateY(-50%); /* Adjust for height */
+    padding: 0; /* Remove padding */
+    height: auto; /* Let content define height */
+    z-index: 10; /* Ensure it's above the input */
+}
+
+    .toggle-password:hover {
+        background-color: transparent; /* No background on hover */
+    }
+
+    .toggle-password i {
+        font-size: 1.1rem; /* Adjust icon size */
+        color: #6c757d; /* Muted icon color */
+    }
+
+/* Ensure input group is positioned relative for absolute positioning */
+    .form-group .input-group {
+    position: relative;
+    }
+
+    /* Add padding to the input field so text doesn't go under the icon */
+    .form-group .input-group .input-field {
+        padding-right: 2.5rem; /* Space for the icon */
+    }

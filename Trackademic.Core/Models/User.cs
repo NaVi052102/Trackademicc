@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Trackademic.Data.Models;
+namespace Trackademic.Core.Models;
 
 public partial class User
 {

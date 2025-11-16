@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using Trackademic.Data.Models;
+using Trackademic.Core.Models; // <-- 1. This line is fixed
 
 namespace Trackademic.Data.Data;
 
@@ -17,27 +17,16 @@ public partial class TrackademicDbContext : DbContext
     }
 
     public virtual DbSet<Admin> Admins { get; set; }
-
     public virtual DbSet<Class> Classes { get; set; }
-
     public virtual DbSet<Classassignment> Classassignments { get; set; }
-
     public virtual DbSet<Classenrollment> Classenrollments { get; set; }
-
     public virtual DbSet<Department> Departments { get; set; }
-
     public virtual DbSet<Grade> Grades { get; set; }
-
     public virtual DbSet<Schoolyear> Schoolyears { get; set; }
-
     public virtual DbSet<Semester> Semesters { get; set; }
-
     public virtual DbSet<Student> Students { get; set; }
-
     public virtual DbSet<Subject> Subjects { get; set; }
-
     public virtual DbSet<Teacher> Teachers { get; set; }
-
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -49,9 +38,7 @@ public partial class TrackademicDbContext : DbContext
         modelBuilder.Entity<Admin>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__admins__3213E83F2EBA4795");
-
             entity.ToTable("admins");
-
             entity.HasIndex(e => e.Email, "UQ__admins__AB6E61648A8E8CD1").IsUnique();
 
             entity.Property(e => e.Id)
@@ -67,7 +54,8 @@ public partial class TrackademicDbContext : DbContext
                 .HasMaxLength(100)
                 .HasColumnName("last_name");
 
-            entity.HasOne(d => d.IdNavigation).WithOne(p => p.Admin)
+            // Changed 'd.IdNavigation' to 'd.User'
+            entity.HasOne(d => d.User).WithOne(p => p.Admin)
                 .HasForeignKey<Admin>(d => d.Id)
                 .HasConstraintName("FK__admins__id__5AEE82B9");
         });
@@ -75,9 +63,7 @@ public partial class TrackademicDbContext : DbContext
         modelBuilder.Entity<Class>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__classes__3213E83F978E8A4E");
-
             entity.ToTable("classes");
-
             entity.HasIndex(e => new { e.SubjectId, e.SchoolYearId, e.SemesterId, e.ClassSection }, "UQ__classes__9B6332F6D4474B46").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
@@ -107,21 +93,21 @@ public partial class TrackademicDbContext : DbContext
         modelBuilder.Entity<Classassignment>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__classass__3213E83F5D2B9450");
-
             entity.ToTable("classassignment");
-
             entity.HasIndex(e => new { e.ClassId, e.TeacherId }, "UQ__classass__0DCE9EF0A72C861D").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.ClassId).HasColumnName("class_id");
             entity.Property(e => e.TeacherId).HasColumnName("teacher_id");
 
-            entity.HasOne(d => d.Class).WithMany(p => p.Classassignments)
+            // Changed 'p.Classassignments' to 'p.ClassAssignments'
+            entity.HasOne(d => d.Class).WithMany(p => p.ClassAssignments)
                 .HasForeignKey(d => d.ClassId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__classassi__class__6EF57B66");
 
-            entity.HasOne(d => d.Teacher).WithMany(p => p.Classassignments)
+            // Changed 'p.Classassignments' to 'p.ClassAssignments'
+            entity.HasOne(d => d.Teacher).WithMany(p => p.ClassAssignments)
                 .HasForeignKey(d => d.TeacherId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__classassi__teach__6FE99F9F");
@@ -130,9 +116,7 @@ public partial class TrackademicDbContext : DbContext
         modelBuilder.Entity<Classenrollment>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__classenr__3213E83F1AF53F34");
-
             entity.ToTable("classenrollment");
-
             entity.HasIndex(e => new { e.StudentId, e.ClassId }, "UQ__classenr__55EC41036F45BF06").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
@@ -140,12 +124,14 @@ public partial class TrackademicDbContext : DbContext
             entity.Property(e => e.EnrollmentDate).HasColumnName("enrollment_date");
             entity.Property(e => e.StudentId).HasColumnName("student_id");
 
-            entity.HasOne(d => d.Class).WithMany(p => p.Classenrollments)
+            // Changed 'p.Classenrollments' to 'p.ClassEnrollments'
+            entity.HasOne(d => d.Class).WithMany(p => p.ClassEnrollments)
                 .HasForeignKey(d => d.ClassId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__classenro__class__74AE54BC");
 
-            entity.HasOne(d => d.Student).WithMany(p => p.Classenrollments)
+            // Changed 'p.Classenrollments' to 'p.ClassEnrollments'
+            entity.HasOne(d => d.Student).WithMany(p => p.ClassEnrollments)
                 .HasForeignKey(d => d.StudentId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__classenro__stude__73BA3083");
@@ -154,9 +140,7 @@ public partial class TrackademicDbContext : DbContext
         modelBuilder.Entity<Department>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__departme__3213E83F2BB4B61C");
-
             entity.ToTable("departments");
-
             entity.HasIndex(e => e.DeptName, "UQ__departme__C7D39AE1A5C183D9").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
@@ -168,9 +152,7 @@ public partial class TrackademicDbContext : DbContext
         modelBuilder.Entity<Grade>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__grades__3213E83F5C505AAB");
-
             entity.ToTable("grades");
-
             entity.HasIndex(e => e.EnrollmentId, "UQ__grades__6D24AA7B8AA0CFB4").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
@@ -185,7 +167,8 @@ public partial class TrackademicDbContext : DbContext
                 .HasColumnType("decimal(5, 2)")
                 .HasColumnName("midterm_grade");
 
-            entity.HasOne(d => d.Enrollment).WithOne(p => p.Grade)
+            // Changed 'd.Enrollment' to 'd.ClassEnrollment'
+            entity.HasOne(d => d.ClassEnrollment).WithOne(p => p.Grade)
                 .HasForeignKey<Grade>(d => d.EnrollmentId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__grades__enrollme__787EE5A0");
@@ -194,9 +177,7 @@ public partial class TrackademicDbContext : DbContext
         modelBuilder.Entity<Schoolyear>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__schoolye__3213E83F8A848080");
-
             entity.ToTable("schoolyears");
-
             entity.HasIndex(e => e.YearName, "UQ__schoolye__252258BE4EE6A49E").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
@@ -210,7 +191,6 @@ public partial class TrackademicDbContext : DbContext
         modelBuilder.Entity<Semester>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__semester__3213E83F5590C6E6");
-
             entity.ToTable("semesters");
 
             entity.Property(e => e.Id).HasColumnName("id");
@@ -230,11 +210,8 @@ public partial class TrackademicDbContext : DbContext
         modelBuilder.Entity<Student>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__students__3213E83F0F8054CE");
-
             entity.ToTable("students");
-
             entity.HasIndex(e => e.StudentNumber, "UQ__students__0E749A79BD14F1B8").IsUnique();
-
             entity.HasIndex(e => e.Email, "UQ__students__AB6E6164C7C72C6E").IsUnique();
 
             entity.Property(e => e.Id)
@@ -259,7 +236,8 @@ public partial class TrackademicDbContext : DbContext
                 .HasMaxLength(20)
                 .HasColumnName("student_number");
 
-            entity.HasOne(d => d.IdNavigation).WithOne(p => p.Student)
+            // Changed 'd.IdNavigation' to 'd.User'
+            entity.HasOne(d => d.User).WithOne(p => p.Student)
                 .HasForeignKey<Student>(d => d.Id)
                 .HasConstraintName("FK__students__id__656C112C");
         });
@@ -267,9 +245,7 @@ public partial class TrackademicDbContext : DbContext
         modelBuilder.Entity<Subject>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__subjects__3213E83F269CFAD9");
-
             entity.ToTable("subjects");
-
             entity.HasIndex(e => e.SubjectCode, "UQ__subjects__CEACD920B6B3340C").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
@@ -290,11 +266,8 @@ public partial class TrackademicDbContext : DbContext
         modelBuilder.Entity<Teacher>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__teachers__3213E83FD348AC3E");
-
             entity.ToTable("teachers");
-
             entity.HasIndex(e => e.TeacherId, "UQ__teachers__03AE777F1B4A2F2E").IsUnique();
-
             entity.HasIndex(e => e.Email, "UQ__teachers__AB6E6164232CCE09").IsUnique();
 
             entity.Property(e => e.Id)
@@ -325,7 +298,8 @@ public partial class TrackademicDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__teachers__depart__60A75C0F");
 
-            entity.HasOne(d => d.IdNavigation).WithOne(p => p.Teacher)
+            // Changed 'd.IdNavigation' to 'd.User'
+            entity.HasOne(d => d.User).WithOne(p => p.Teacher)
                 .HasForeignKey<Teacher>(d => d.Id)
                 .HasConstraintName("FK__teachers__id__5FB337D6");
         });
@@ -333,9 +307,7 @@ public partial class TrackademicDbContext : DbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__users__3213E83FB2E57A42");
-
             entity.ToTable("users");
-
             entity.HasIndex(e => e.Username, "UQ__users__F3DBC57261C03770").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");

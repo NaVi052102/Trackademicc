@@ -1,0 +1,116 @@
+﻿/* Rule to vertically center the content */
+main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: calc(100vh - 100px);
+}
+
+/* --- DASHBOARD STYLES --- */
+.summary-card {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    margin-bottom: 1rem;
+}
+
+.summary-card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.summary-card-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #333;
+}
+
+    .summary-card-value.gpa {
+        color: #28a745;
+    }
+
+    .summary-card-value.failed {
+        color: #dc3545;
+    }
+
+/* --- BADGE STYLES --- */
+.grade-badge {
+    display: inline-block;
+    padding: 0.4em 0.8em;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 50rem;
+}
+
+.badge-passed {
+    color: #155724;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+}
+
+.badge-failed {
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+}
+
+.badge-incomplete {
+    color: #383d41;
+    background-color: #e2e3e5;
+    border: 1px solid #d6d8db;
+}
+
+/* --- Table Styles --- */
+.grade-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    text-align: center;
+    vertical-align: middle;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.grade-table td {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.grade-table .text-left {
+    text-align: left;
+}
+
+.grade-fail {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* "SET CONFIG" BUTTON STYLE */
+.btn-set-config {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: #ffffff;
+    border-radius: 150px;
+}
+
+    .btn-set-config:hover {
+        background-color: #28a745;
+        border-color: #28a745;
+        color: #ffffff;
+    }
+
+/* Card Header Style */
+.grade-table-header {
+    background-color: #d4edda;
+    color: #333333;
+    border-bottom: 1px solid #c3e6cb;
+}

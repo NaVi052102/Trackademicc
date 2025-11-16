@@ -1,0 +1,156 @@
+﻿/* --- Main Page Layout --- */
+.classes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.classes-title {
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+.classes-header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* --- Search Bar --- */
+.search-bar {
+    position: relative;
+}
+
+    .search-bar input {
+        border-radius: 20px;
+        padding-left: 2.5rem;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        width: 300px;
+    }
+
+    .search-bar .bi-search {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+
+/* --- Filters/Actions --- */
+.classes-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.classes-filters {
+    display: flex;
+    gap: 1rem;
+}
+
+/* --- Class Grid Layout --- */
+.class-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+/* --- Class Card Styling --- */
+.class-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    background-color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transition: all 0.2s ease-in-out;
+    overflow: hidden;
+}
+
+    .class-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    }
+
+.class-card-content {
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.class-card-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    background-color: #f0f0f0;
+}
+
+.class-card-info {
+    flex-grow: 1;
+}
+
+    .class-card-info h5 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .class-card-info p {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+
+.class-card-footer {
+    border-top: 1px solid #e0e0e0;
+    padding: 0.75rem 1rem;
+    background-color: #fdfdfd;
+}
+
+    .class-card-footer a {
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+/* --- NEW BUTTON STYLE --- */
+.btn-filter {
+    background-color: #6c757d; /* Gray */
+    border-color: #6c757d;
+    color: #ffffff;
+}
+
+    .btn-filter:hover {
+        background-color: #28a745; /* Green on hover */
+        border-color: #28a745;
+        color: #ffffff;
+    }
+
+/* Responsive adjustments */
+@@media (max-width: 992px) {
+    .class-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@@media (max-width: 768px) {
+    .class-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .classes-header, .classes-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .classes-header-right {
+        width: 100%;
+    }
+
+    .search-bar input {
+        width: 100%;
+    }
+}

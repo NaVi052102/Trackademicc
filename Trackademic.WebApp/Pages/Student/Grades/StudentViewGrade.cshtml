@@ -1,0 +1,117 @@
+﻿@page
+@model Trackademic.Pages.Student.StudentViewGradeModel
+@{
+    ViewData["Title"] = "View Grades";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/student-view-grade.css" asp-append-version="true" />
+}
+
+<div class="row">
+    <div class="col-lg-11 mx-auto">
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <form method="get" class="d-flex align-items-center">
+                    <div class="me-3">
+                        <label for="SchoolYear" class="form-label mb-0 me-2"><strong>School Year</strong></label>
+                        <select asp-for="SchoolYear" asp-items="Model.SchoolYears" class="form-select d-inline-block" style="width: 120px;"></select>
+                    </div>
+                    <div class="me-3">
+                        <label for="Semester" class="form-label mb-0 me-2"><strong>Semester</strong></label>
+                        <select asp-for="Semester" asp-items="Model.Semesters" class="form-select d-inline-block" style="width: 120px;"></select>
+                    </div>
+                    <button type="submit" class="btn btn-set-config btn-sm">
+                        <i class="bi bi-power"></i> Set Config
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="summary-card-title">Semester GPA</div>
+                    <div class="summary-card-value gpa">@Model.GPA.ToString("0.00")</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="summary-card-title">Total Units</div>
+                    <div class="summary-card-value">@Model.TotalUnits</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="summary-card-title">Subjects Passed</div>
+                    <div class="summary-card-value">@Model.PassedSubjects</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card">
+                    <div class="summary-card-title">Subjects Failed/Inc</div>
+                    <div class="summary-card-value failed">@Model.FailedSubjects</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header grade-table-header">
+                <strong>Program:</strong> @Model.ProgramName - @Model.SelectedTermDisplay
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 grade-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Subject Code</th>
+                                <th>Description</th>
+                                <th>Faculty Name</th>
+                                <th>Units</th>
+                                <th>Midterm</th>
+                                <th>Final</th>
+                                <th>Final Grade</th>
+                                <th>Grade Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var grade in Model.Grades)
+                            {
+                                <tr>
+                                    <td>@grade.Id</td>
+                                    <td class="text-left">@grade.SubjectCode</td>
+                                    <td class="text-left">@grade.Description</td>
+                                    <td class="text-left">@grade.FacultyName</td>
+                                    <td>@grade.Units</td>
+
+                                    <td>@grade.Midterm</td>
+                                    <td>@grade.Final</td>
+
+                                    <td class="@(grade.FinalGrade < 3.0m ? "grade-fail" : "")">@grade.FinalGrade.ToString("0.0")</td>
+
+                                    <td>
+                                        @if (grade.Status == "PASSED")
+                                        {
+                                            <span class="grade-badge badge-passed">PASSED</span>
+                                        }
+                                        else if (grade.Status == "FAILED")
+                                        {
+                                            <span class="grade-badge badge-failed">FAILED</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="grade-badge badge-incomplete">@grade.Status</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
