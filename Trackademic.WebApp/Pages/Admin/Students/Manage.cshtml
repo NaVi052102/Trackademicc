@@ -1,0 +1,213 @@
+@page
+@model Trackademic.Pages.Admin.Students.ManageModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Manage Students";
+}
+
+<style>
+    /* --- STYLE ADAPTATION FROM TEACHER CLASSES PAGE ---
+           These styles ensure the look and feel matches your provided design.
+        */
+    .students-container {
+        padding: 1.5rem;
+    }
+
+    .student-filter-bar {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        /* Updated display for better layout of multiple filters */
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .select-label {
+        font-weight: 600;
+        margin-right: 1rem;
+        white-space: nowrap;
+    }
+
+    /* Additional styles for the filter button */
+    .btn-apply-filters {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #ffffff;
+    }
+
+        .btn-apply-filters:hover {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+    /* Roster Table Styling (Adapted for Students List) */
+    .student-list-table th {
+        background-color: #6c757d;
+        color: white;
+        vertical-align: middle;
+    }
+
+    .progress-bar-sm {
+        height: 8px;
+        font-size: 0.65rem;
+        line-height: 8px;
+    }
+
+    .performance-cell {
+        min-width: 120px;
+    }
+
+    .status-text {
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .status-pass {
+        color: #198754;
+    }
+
+    .status-fail {
+        color: #dc3545;
+    }
+
+    .search-input {
+        min-width: 250px;
+    }
+</style>
+
+<div class="students-container">
+
+    @* --- Global Filter and Search Bar --- *@
+    <div class="student-filter-bar">
+        <form method="get" class="d-flex flex-wrap align-items-center gap-4">
+
+            @* Year and Semester Filters *@
+            <div class="d-flex flex-wrap gap-4">
+                <div class="filter-group">
+                    <label for="SchoolYear" class="select-label">Year:</label>
+                    <select asp-for="SchoolYear" asp-items="Model.SchoolYears" class="form-select" style="width: 120px;"></select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="Semester" class="select-label">Semester:</label>
+                    <select asp-for="Semester" asp-items="Model.Semesters" class="form-select" style="width: 150px;"></select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="SortBy" class="select-label">Sort By:</label>
+                    <select asp-for="SortBy" asp-items="Model.SortOptions" class="form-select" style="width: 150px;"></select>
+                </div>
+            </div>
+
+            @* Search and Apply Button *@
+            <div class="d-flex align-items-center flex-grow-1 justify-content-end gap-3">
+                <div class="input-group search-input">
+                    <input type="text" asp-for="SearchTerm" class="form-control" placeholder="Search by name or ID...">
+                    @if (!string.IsNullOrEmpty(Model.SearchTerm))
+                    {
+                        @* Path changed to relative `./ManageStudent` to clear search *@
+                        <a asp-page="./ManageStudent" class="btn btn-outline-danger" title="Clear Search">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    }
+                </div>
+
+                <button type="submit" class="btn btn-sm btn-apply-filters">
+                    <i class="bi bi-funnel me-1"></i> Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+    @* --- End Filter/Search Bar --- *@
+
+
+    @* --- Student List Table --- *@
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="bi bi-table me-2"></i> Student List (@Model.StudentList.Count)</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover student-list-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ID Number</th>
+                            <th>Full Name</th>
+                            <th>Enrollment Date</th>
+                            <th class="text-center performance-cell">Overall Performance</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.StudentList.Any())
+                        {
+                            @for (int i = 0; i < Model.StudentList.Count; i++)
+                            {
+                                var student = Model.StudentList[i];
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td>@student.IDNumber</td>
+                                    <td>@student.FullName</td>
+                                    <td>@student.EnrollmentDate.ToShortDateString()</td>
+
+                                    @* Performance Cell Styling *@
+                                    <td class="text-center">
+                                        @{
+                                            // Logic to determine badge and bar color/status (can be adjusted)
+                                            string badgeClass = student.OverallPerformance switch
+                                            {
+                                                >= 85 => "bg-success",
+                                                >= 70 => "bg-warning text-dark",
+                                                _ => "bg-danger"
+                                            };
+                                            string statusClass = student.OverallPerformance >= 70 ? "status-pass" : "status-fail";
+                                            // Ensure performance value is capped at 100 for progress bar
+                                            double displayPerformance = Math.Min(student.OverallPerformance, 100);
+                                        }
+                                        <small class="d-block fw-bold mb-1">@student.OverallPerformance.ToString("F1")%</small>
+                                        <div class="progress progress-bar-sm">
+                                            <div class="progress-bar @badgeClass"
+                                                 role="progressbar"
+                                                 style="width: @displayPerformance%"
+                                                 aria-valuenow="@displayPerformance"
+                                                 aria-valuemin="0"
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        <span class="status-text @statusClass mt-1 d-block">
+                                            @(student.OverallPerformance >= 70 ? "Passing" : "Failing")
+                                        </span>
+                                    </td>
+
+                                    <td class="text-center">
+                                        @* CONFIRMED PATH: /Admin/Students/StudentProfile *@
+                                        <a asp-page="/Admin/Students/Profile" asp-route-id="@student.StudentID" class="btn btn-sm btn-info text-white me-1">Details</a>
+                                        <a asp-page="./Delete" asp-route-id="@student.StudentID" class="btn btn-sm btn-danger">Delete</a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">No students match the current filters.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    @* --- End Student List Table --- *@
+
+</div>

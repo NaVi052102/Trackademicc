@@ -1,0 +1,345 @@
+﻿@page
+@model Trackademic.Pages.Admin.Students.ProfileModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Student Profile";
+}
+
+<style>
+    /* A little custom style to center the placeholder */
+    .profile-pic-placeholder {
+        width: 150px;
+        height: 150px;
+        background-color: #e9ecef;
+        border: 1px solid #ced4da;
+        border-radius: 50%;
+        margin: 0 auto 10px auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    /* --- "UPDATE PROFILE" BUTTON --- */
+    .btn-update-profile {
+        background-color: #1b6ec2; /* Updated to a clear blue for primary action */
+        border-color: #1b6ec2;
+        color: #ffffff;
+        border-radius: 150px;
+        height: 50px;
+        width: 200px;
+    }
+
+        .btn-update-profile:hover {
+            background-color: #155bb5;
+            border-color: #155bb5;
+            color: #ffffff;
+        }
+
+    /* --- "DISCARD CHANGES" BUTTON (UPDATED) --- */
+    .btn-discard-changes {
+        background-color: #dc3545; /* Red for destructive action */
+        border-color: #dc3545;
+        color: #ffffff;
+        border-radius: 150px;
+        height: 50px;
+        width: 200px;
+    }
+
+        .btn-discard-changes:hover {
+            background-color: #c82333;
+            border-color: #c82333;
+        }
+
+    /* --- "UPLOAD PHOTO" BUTTON --- */
+    .btn-upload-photo {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #ffffff;
+        border-radius: 15px;
+    }
+
+        .btn-upload-photo:hover {
+            background-color: #5a6268;
+            border-color: #5a6268;
+            color: #ffffff;
+        }
+
+    /* --- ICON STYLES --- */
+    .card-header .bi {
+        font-size: 1.5rem;
+        vertical-align: middle;
+    }
+
+    /* --- HIDE/SHOW ELEMENTS BASED ON MODE (CSS Handles this primarily) --- */
+    /* By default, hide upload/action buttons */
+    #uploadPhotoContainer,
+    #editActionButtons {
+        display: none;
+    }
+
+    /* When in edit-mode, show them */
+    .edit-mode #uploadPhotoContainer,
+    .edit-mode #editActionButtons {
+        display: block;
+    }
+
+    /* When in edit-mode, hide the 'Edit' button */
+    .edit-mode #editProfileBtn {
+        display: none;
+    }
+
+    /* When in view-mode, show the 'Edit' button */
+    .view-mode #editProfileBtn {
+        display: block;
+    }
+
+    /* --- INPUT BOX STYLING (UPDATED) --- */
+    /* Style disabled inputs to look 'read-only' but still be boxes */
+    .form-control:disabled {
+        background-color: #e9ecef; /* Light gray background */
+        opacity: 1; /* Make sure text is readable */
+        cursor: not-allowed;
+    }
+</style>
+
+<div class="row mt-4">
+
+    <div class="col-lg-11 mx-auto">
+
+        <div class="mb-4">
+            <h2>Student Profile</h2>
+            <p class="text-muted">View and manage your student credentials and account details.</p>
+        </div>
+
+        @if (TempData["Message"] != null)
+        {
+            <div class="alert alert-@TempData["MessageType"] alert-dismissible fade show" role="alert">
+                @TempData["Message"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <form method="post" id="profileForm">
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-person me-2"></i> Basic Information
+                    </h5>
+                    @* This button is used for both 'Edit' and 'Cancel' *@
+                    <button type="button" id="editProfileBtn" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-pencil"></i> Edit
+                    </button>
+                </div>
+                <div class="card-body">
+
+                    <div class="text-center mb-3">
+                        <div class="profile-pic-placeholder">
+                            <span>(Profile)</span>
+                        </div>
+                        <div id="uploadPhotoContainer">
+                            <label for="photoUpload" class="btn btn-sm btn-upload-photo">Upload Photo</label>
+                            <input type="file" id="photoUpload" class="d-none">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="studentFullName" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="studentFullName" asp-for="Student.FullName">
+                            <span asp-validation-for="Student.FullName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="studentDob" class="form-label">Date of Birth</label>
+                            <input type="date" class="form-control" id="studentDob" asp-for="Student.DateOfBirth">
+                            <span asp-validation-for="Student.DateOfBirth" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="gender" class="form-label">Gender</label>
+                            <select class="form-control" id="gender">
+                                <option value="">-- Select Gender --</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="studentContactNumber" class="form-label">Contact Number</label>
+                            <input type="tel" class="form-control" id="studentContactNumber" asp-for="Student.ContactNumber">
+                            <span asp-validation-for="Student.ContactNumber" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="studentEmailAddress" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="studentEmailAddress" asp-for="Student.EmailAddress">
+                        <span asp-validation-for="Student.EmailAddress" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="studentAddress" class="form-label">Address</label>
+                        <textarea class="form-control" id="studentAddress" rows="3" asp-for="Student.Address"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-person-vcard me-2"></i> Student Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="studentId" class="form-label">Student ID</label>
+                            <input type="text" class="form-control" id="studentId" asp-for="Student.StudentId" disabled>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="studentYearLevel" class="form-label">Year Level</label>
+                            <input type="text" class="form-control" id="studentYearLevel" asp-for="Student.YearLevel">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="studentCourse" class="form-label">Course / Program</label>
+                        <input type="text" class="form-control" id="studentCourse" asp-for="Student.Course">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="studentGuardian" class="form-label">Guardian's Name & Contact Info</label>
+                        <input type="text" class="form-control" id="studentGuardian" asp-for="Student.Guardian">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-lock me-2"></i> Account Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="studentUsername" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="studentUsername" asp-for="Student.Username">
+                            <span asp-validation-for="Student.Username" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="studentRole" class="form-label">Role</label>
+                            <input type="text" class="form-control" id="studentRole" asp-for="Student.Role">
+                        </div>
+                    </div>
+
+                    <div id="passwordFields" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="password">
+                                <small class="text-muted">Leave blank to keep current password.</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirmPassword">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-end mb-4" id="editActionButtons">
+                @* FIX: Changed type from "submit" to "button" and removed the asp-page-handler to use JavaScript for reloading/canceling. *@
+                <button type="button" id="discardChangesBtn" class="btn btn-lg btn-discard-changes me-2">Discard Changes</button>
+                <button type="submit" asp-page-handler="Update" class="btn btn-lg btn-update-profile">Update Profile</button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+
+            // --- SELECTORS ---
+            const profileForm = $('#profileForm');
+            const editProfileBtn = $('#editProfileBtn');
+            const discardChangesBtn = $('#discardChangesBtn'); // New selector
+            const editActionButtons = $('#editActionButtons');
+            const uploadPhotoContainer = $('#uploadPhotoContainer');
+            const passwordFields = $('#passwordFields');
+
+            // Get all inputs and textareas *except* the Student ID
+            const formInputs = profileForm.find('input, textarea, select').not('#studentId');
+
+            // --- FUNCTIONS ---
+            function setViewMode() {
+                formInputs.prop('disabled', true); // Disable all inputs
+                editProfileBtn.html('<i class="bi bi-pencil"></i> Edit'); // Show 'Edit' button
+
+                // Set form class to 'view-mode'
+                profileForm.removeClass('edit-mode').addClass('view-mode');
+            }
+
+            function setEditMode() {
+                formInputs.prop('disabled', false); // Enable all inputs
+                editProfileBtn.html('<i class="bi bi-x-lg"></i> Cancel'); // Change button to 'Cancel'
+
+                // Set form class to 'edit-mode'
+                profileForm.removeClass('view-mode').addClass('edit-mode');
+            }
+
+            function handleCancelOrDiscard() {
+                // Since clicking 'Cancel' or 'Discard Changes' means abandoning
+                // any typed changes, the easiest way to reset the form data
+                // to its original loaded state is to reload the entire page.
+
+                // We use a custom dialog instead of alert() or confirm() as per instructions
+                const shouldReload = window.confirm("Are you sure you want to discard changes? Any unsaved modifications will be lost.");
+
+                if (shouldReload) {
+                    // Reload the page to reset all form data
+                    location.reload();
+                }
+            }
+
+            // --- PAGE LOAD ---
+            // Always start in view mode
+            setViewMode();
+
+            // --- CLICK HANDLERS ---
+
+            // 1. Handle Edit/Cancel Button
+            editProfileBtn.on('click', function () {
+                if (profileForm.hasClass('view-mode')) {
+                    // If we are in view mode, switch to edit mode
+                    setEditMode();
+                } else {
+                    // If we are in edit mode and click 'Cancel', discard changes
+                    handleCancelOrDiscard();
+                }
+            });
+
+            // 2. Handle Discard Changes Button
+            discardChangesBtn.on('click', handleCancelOrDiscard);
+
+
+            // --- Handle Validation Errors ---
+            // If the page loaded with errors, it means the user tried to Update
+            // and failed. We should keep the page in edit mode.
+            @if (!ViewContext.ModelState.IsValid)
+            {
+                        <text>
+                            setEditMode();
+                        </text>
+            }
+        });
+    </script>
+}

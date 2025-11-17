@@ -1,0 +1,218 @@
+@page
+@model Trackademic.Pages.Admin.Teachers.ManageModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Manage Teachers";
+}
+
+<style>
+    /* --- STYLE ADAPTATION FROM STUDENT PAGE ---
+           Using the same stylish classes for consistency.
+        */
+    .students-container { /* Renamed class for clarity: teachers-container */
+        padding: 1.5rem;
+    }
+
+    .student-filter-bar { /* Renamed class for clarity: teacher-filter-bar */
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .select-label {
+        font-weight: 600;
+        margin-right: 1rem;
+        white-space: nowrap;
+    }
+
+    /* Additional styles for the filter button */
+    .btn-apply-filters {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #ffffff;
+    }
+
+        .btn-apply-filters:hover {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+    /* Roster Table Styling (Adapted for Teachers List) */
+    .student-list-table th { /* Renamed class for clarity: teacher-list-table th */
+        background-color: #6c757d;
+        color: white;
+        vertical-align: middle;
+    }
+
+    .performance-cell {
+        min-width: 120px;
+    }
+
+    .status-text {
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    /* We'll use these classes to color-code the teacher rating/status */
+    .status-pass {
+        color: #198754;
+    }
+
+    .status-fail {
+        color: #dc3545;
+    }
+
+    .search-input {
+        min-width: 250px;
+    }
+</style>
+
+<div class="students-container">
+    @* Keeping students-container class name for simplicity, but logically it's the teachers container *@
+
+    @* --- Global Filter and Search Bar --- *@
+    <div class="student-filter-bar">
+        @* Keeping student-filter-bar class name for simplicity *@
+        <form method="get" class="d-flex flex-wrap align-items-center gap-4">
+
+            @* Year and Semester Filters *@
+            <div class="d-flex flex-wrap gap-4">
+                <div class="filter-group">
+                    <label for="SchoolYear" class="select-label">Year:</label>
+                    <select asp-for="SchoolYear" asp-items="Model.SchoolYears" class="form-select" style="width: 120px;"></select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="Semester" class="select-label">Semester:</label>
+                    <select asp-for="Semester" asp-items="Model.Semesters" class="form-select" style="width: 150px;"></select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="SortBy" class="select-label">Sort By:</label>
+                    <select asp-for="SortBy" asp-items="Model.SortOptions" class="form-select" style="width: 150px;"></select>
+                </div>
+            </div>
+
+            @* Search and Apply Button *@
+            <div class="d-flex align-items-center flex-grow-1 justify-content-end gap-3">
+                <div class="input-group search-input">
+                    <input type="text" asp-for="SearchTerm" class="form-control" placeholder="Search by name or ID...">
+                    @if (!string.IsNullOrEmpty(Model.SearchTerm))
+                    {
+                        <a asp-page="./ManageTeacher" class="btn btn-outline-danger" title="Clear Search">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    }
+                </div>
+
+                <button type="submit" class="btn btn-sm btn-apply-filters">
+                    <i class="bi bi-funnel me-1"></i> Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+    @* --- End Filter/Search Bar --- *@
+
+
+    @* --- Teacher List Table --- *@
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="bi bi-table me-2"></i> Teacher List (@Model.TeacherList.Count)</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover student-list-table mb-0">
+                    @* Keeping student-list-table class name for consistency *@
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Employee ID</th> @* Updated Header *@
+                            <th>Full Name</th>
+                            <th>Employment Date</th> @* Updated Header *@
+                            <th class="text-center">Classes Taught</th> @* New Column *@
+                            <th class="text-center performance-cell">Avg. Rating</th> @* Updated Column *@
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.TeacherList.Any())
+                        {
+                            @for (int i = 0; i < Model.TeacherList.Count; i++)
+                            {
+                                var teacher = Model.TeacherList[i];
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td>@teacher.EmployeeID</td>
+                                    <td>@teacher.FullName</td>
+                                    <td>@teacher.EmploymentDate.ToShortDateString()</td> @* Display Employment Date *@
+                                    <td class="text-center">@teacher.ClassesTaught</td>
+
+                                    @* Performance Cell Styling (Adapted for Average Rating) *@
+                                    <td class="text-center">
+                                        @{
+                                            // Logic to determine badge and bar color/status based on rating (4.5 is excellent)
+                                            string badgeClass = teacher.AverageRating switch
+                                            {
+                                                >= 4.5 => "bg-success",
+                                                >= 4.0 => "bg-warning text-dark",
+                                                _ => "bg-danger"
+                                            };
+                                            string statusText = teacher.AverageRating >= 4.0 ? "High" : "Low";
+                                            string statusClass = teacher.AverageRating >= 4.0 ? "status-pass" : "status-fail";
+
+                                            // Convert rating (max 5) to percentage (max 100) for progress bar
+                                            double displayPerformance = (teacher.AverageRating / 5.0) * 100;
+                                        }
+                                        <small class="d-block fw-bold mb-1">@teacher.AverageRating.ToString("F1") / 5.0</small>
+                                        <div class="progress progress-bar-sm">
+                                            <div class="progress-bar @badgeClass"
+                                                 role="progressbar"
+                                                 style="width: @displayPerformance%"
+                                                 aria-valuenow="@displayPerformance"
+                                                 aria-valuemin="0"
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        <span class="status-text @statusClass mt-1 d-block">
+                                            @statusText Rating
+                                        </span>
+                                    </td>
+
+                                    <td class="text-center">
+                                        @* Updated: Use the full path for the Details link (assuming /Admin/Teachers/TeacherProfile exists) *@
+                                        <a asp-page="/Admin/Teachers/Profile" asp-route-id="@teacher.TeacherID" class="btn btn-sm btn-info text-white me-1">Details</a>
+                                        <a asp-page="./Delete" asp-route-id="@teacher.TeacherID" class="btn btn-sm btn-danger">Delete</a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">No teachers match the current filters.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    @* --- End Teacher List Table --- *@
+
+</div>
+
+@* Required to ensure the model binding works when filtering/searching *@
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

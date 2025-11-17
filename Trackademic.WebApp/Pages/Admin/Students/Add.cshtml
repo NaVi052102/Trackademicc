@@ -1,0 +1,200 @@
+@page
+@model Trackademic.Pages.Admin.Students.AddModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "StudentRegistration";
+}
+
+<style>
+    /* A little custom style to center the placeholder */
+    .profile-pic-placeholder {
+        width: 150px;
+        height: 150px;
+        background-color: #e9ecef;
+        border: 1px solid #ced4da;
+        border-radius: 50%;
+        margin: 0 auto 10px auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .btn-create-student {
+        /* This makes the button gray */
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #ffffff;
+        border-radius: 150px;
+        height: 50px;
+        width: 300px;
+    }
+
+        .btn-create-student:hover {
+            /* This is the new, lighter green on hover */
+            background-color: #28a745;
+            border-color: #28a745;
+            color: #ffffff;
+        }
+
+    .btn-upload-photo {
+        /* This makes the button gray */
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #ffffff;
+        /* This adds the rounded corners */
+        border-radius: 15px;
+    }
+
+        .btn-upload-photo:hover {
+            /* This makes the button green on hover */
+            background-color: #28a745;
+            border-color: #28a745;
+            color: #ffffff;
+        }
+
+    /* --- THIS IS THE NEW CSS FOR YOUR ICONS --- */
+    .card-header .bi {
+        font-size: 1.5rem;
+        vertical-align: middle;
+    }
+</style>
+
+<div class="row mt-4">
+
+    <div class="col-lg-11 mx-auto">
+
+        <div class="mb-4">
+            <h2>Student Profile Registration</h2>
+            <p class="text-muted">Please provide your student credentials and account details.</p>
+        </div>
+
+        <form method="post">
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-person me-2"></i>
+                        Basic Information
+                    </h5>
+                </div>
+                <div class="card-body">
+
+                    <div class="text-center mb-3">
+                        <div class="profile-pic-placeholder">
+                            <span>(Profile)</span>
+                        </div>
+                        <label for="photoUpload" class="btn btn-sm btn-upload-photo">Upload Photo</label>
+                        <input type="file" id="photoUpload" class="d-none">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fullName" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="fullName">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="dob" class="form-label">Date of Birth</label>
+                            <input type="date" class="form-control" id="dob">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="gender" class="form-label">Gender</label>
+                            <select class="form-control" id="gender">
+                                <option value="">-- Select Gender --</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="contactNumber" class="form-label">Contact Number</label>
+                            <input type="tel" class="form-control" id="contactNumber">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="emailAddress" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="emailAddress">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Address</label>
+                        <textarea class="form-control" id="address" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-person-vcard me-2"></i>
+                        Student Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="studentId" class="form-label">Student ID</label>
+                            <input type="text" class="form-control" id="studentId">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="yearLevel" class="form-label">Year Level</label>
+                            <input type="text" class="form-control" id="yearLevel">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="course" class="form-label">Course / Program</label>
+                        <input type="text" class="form-control" id="course">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="guardian" class="form-label">Guardian's Name & Contact Info</label>
+                        <input type="text" class="form-control" id="guardian">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-lock me-2"></i>
+                        Account Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="role" class="form-label">Role</label>
+                            <input type="text" class="form-control" id="role">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirmPassword">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-end mb-4">
+                <button type="submit" class="btn btn-lg btn-create-student">Create Student Account</button>
+            </div>
+
+        </form>
+
+    </div>
+</div>

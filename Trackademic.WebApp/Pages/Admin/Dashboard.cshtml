@@ -1,0 +1,260 @@
+@page
+@model Trackademic.Pages.Admin.DashboardModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "StudentRegistration";
+}
+
+<style>
+    /* --- General Dashboard Styles --- */
+    .schedule-filters {
+        padding: 1rem;
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .btn-set-config {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #ffffff;
+    }
+
+        .btn-set-config:hover {
+            background-color: #28a745;
+            border-color: #28a745;
+            color: #ffffff;
+        }
+
+    /* Info Cards */
+    .info-card {
+        border-radius: 10px;
+        transition: transform 0.2s;
+        height: 100%; /* Ensure uniform height for all summary cards */
+    }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+        }
+
+    .info-icon {
+        font-size: 2.5rem;
+        opacity: 0.8;
+    }
+
+    /* Quick Links */
+    .quick-link-btn {
+        /* Adjusted for full width within the col-md-6 containers */
+        width: 100%;
+        margin: 0; /* Remove margin since we use g-3 for spacing */
+        padding: 1rem 1rem;
+        font-size: 1rem;
+        font-weight: 600;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        border-radius: 8px; /* Added rounded corners for links */
+        transition: all 0.2s;
+    }
+
+    /* Departmental Analytics */
+    .analytic-item-header {
+        font-size: 0.9rem;
+        padding: 0.3em 0.6em;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        color: #343a40;
+    }
+
+    .department-analytic-row {
+        padding: 0.8rem 0;
+        border-bottom: 1px dotted #e9ecef;
+    }
+
+        .department-analytic-row:last-child {
+            border-bottom: none;
+        }
+
+    .progress-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-top: 5px;
+        color: #6c757d;
+    }
+</style>
+
+<div class="container-fluid pt-3">
+
+
+    <div class="schedule-filters">
+        <form method="get" class="d-flex align-items-center">
+            <div class="me-3">
+                <label for="SchoolYear" class="form-label mb-0 me-2"><strong>Academic Year</strong></label>
+                <select asp-for="SchoolYear" asp-items="Model.SchoolYears" class="form-select d-inline-block" style="width: 120px;"></select>
+            </div>
+            <div class="me-3">
+                <label for="Semester" class="form-label mb-0 me-2"><strong>Semester</strong></label>
+                <select asp-for="Semester" asp-items="Model.Semesters" class="form-select d-inline-block" style="width: 120px;"></select>
+            </div>
+            <button type="submit" class="btn btn-set-config btn-sm">
+                <i class="bi bi-power"></i> Set Config
+            </button>
+        </form>
+    </div>
+
+    <div class="row g-3 mb-4 justify-content-start">
+
+        <div class="col-md-3">
+            <div class="card info-card text-bg-success shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title display-4 mb-0">@Model.TotalStudents</h2>
+                    <p class="card-text">Total Students</p>
+                    <i class="bi bi-person-lines-fill info-icon position-absolute top-0 end-0 me-3 mt-3"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card info-card text-bg-primary shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title display-4 mb-0">@Model.TotalTeachers</h2>
+                    <p class="card-text">Total Teachers</p>
+                    <i class="bi bi-person-badge-fill info-icon position-absolute top-0 end-0 me-3 mt-3"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card info-card text-bg-warning shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title display-4 mb-0">@Model.TotalDepartments</h2>
+                    <p class="card-text">Total Departments</p>
+                    <i class="bi bi-buildings info-icon position-absolute top-0 end-0 me-3 mt-3"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card info-card text-bg-info shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title display-4 mb-0">@Model.TotalSubjects</h2>
+                    <p class="card-text">Total Subjects</p>
+                    <i class="bi bi-journal-check info-icon position-absolute top-0 end-0 me-3 mt-3"></i>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row">
+
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-lightning-charge me-2"></i> Quick Links
+                    </h5>
+                </div>
+                <!-- Updated Quick Links Section for better responsiveness and correct paths -->
+                <div class="card-body">
+                    <div class="row g-3">
+
+                        <div class="col-6">
+                            <a asp-page="./Students" class="btn btn-outline-success quick-link-btn">
+                                <i class="bi bi-people-fill me-3 fs-4"></i> Manage Students
+                            </a>
+                        </div>
+
+                        <div class="col-6">
+                            <a asp-page="./Teachers" class="btn btn-outline-primary quick-link-btn">
+                                <i class="bi bi-person-video2 me-3 fs-4"></i> Manage Teachers
+                            </a>
+                        </div>
+
+                        <div class="col-6">
+                            <a asp-page="./Departments" class="btn btn-outline-warning text-dark quick-link-btn">
+                                <i class="bi bi-house-door-fill me-3 fs-4"></i> Manage Departments
+                            </a>
+                        </div>
+
+                        <div class="col-6">
+                            <a asp-page="./Subjects" class="btn btn-outline-info quick-link-btn">
+                                <i class="bi bi-book-half me-3 fs-4"></i> Manage Subjects
+                            </a>
+                        </div>
+
+                        <div class="col-6">
+                            <a asp-page="./Classes" class="btn btn-outline-secondary quick-link-btn">
+                                <i class="bi bi-easel-fill me-3 fs-4"></i> Manage Classes
+                            </a>
+                        </div>
+
+                        <!-- NEW: Manage Grades Link with inferred path -->
+                        <div class="col-6">
+                            <a asp-page="./CourseManagement/Grade" class="btn btn-outline-dark quick-link-btn">
+                                <i class="bi bi-patch-check-fill me-3 fs-4"></i> Manage Grades
+                            </a>
+                        </div>
+
+                        <div class="col-6">
+                            <a asp-page="./AuditLog" class="btn btn-outline-danger quick-link-btn">
+                                <i class="bi bi-clipboard-data-fill me-3 fs-4"></i> View Audit Log
+                            </a>
+                        </div>
+
+                        <!-- Added for symmetry and general utility -->
+                        <div class="col-6">
+                            <a asp-page="./Settings" class="btn btn-outline-secondary quick-link-btn">
+                                <i class="bi bi-gear-fill me-3 fs-4"></i> System Settings
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+                <!-- End of Updated Quick Links Section -->
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-award me-2"></i> Departmental Performance Analytics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var dept in Model.DepartmentalPerformance.OrderByDescending(a => a.AveragePerformance))
+                    {
+                        <div class="department-analytic-row">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <strong class="text-primary">@dept.DepartmentName</strong>
+                                <span class="analytic-item-header">Avg: @dept.AveragePerformance%</span>
+                            </div>
+
+                            <div class="mb-1">
+                                <small class="progress-label">Passing Rate (@dept.PassingRate%)</small>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar @(dept.PassingRate >= 90 ? "bg-success" : dept.PassingRate >= 75 ? "bg-warning" : "bg-danger")"
+                                         role="progressbar"
+                                         style="width: @dept.PassingRate%"
+                                         aria-valuenow="@dept.PassingRate"
+                                         aria-valuemin="0"
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <small class="text-muted d-block mt-2">Classes Offered: **@dept.ClassesOffered**</small>
+                        </div>
+                    }
+                    @if (!Model.DepartmentalPerformance.Any())
+                    {
+                        <p class="text-center text-muted m-0">No departmental data found for this period.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

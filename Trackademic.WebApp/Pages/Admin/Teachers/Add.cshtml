@@ -1,0 +1,209 @@
+@page
+@model Trackademic.Pages.Admin.Teachers.AddModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Teacher Registration";
+}
+
+<style>
+    /* A little custom style to center the placeholder */
+    .profile-pic-placeholder {
+        width: 150px;
+        height: 150px;
+        background-color: #e9ecef;
+        border: 1px solid #ced4da;
+        border-radius: 50%;
+        margin: 0 auto 10px auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    /* --- UPDATED BUTTON CLASS --- */
+    .btn-create-teacher {
+        /* This makes the button gray */
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #ffffff;
+        border-radius: 150px;
+        height: 50px;
+        width: 300px;
+    }
+
+        .btn-create-teacher:hover {
+            /* This is the new, lighter green on hover */
+            background-color: #28a745;
+            border-color: #28a745;
+            color: #ffffff;
+        }
+
+    .btn-upload-photo {
+        /* This makes the button gray */
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #ffffff;
+        /* This adds the rounded corners */
+        border-radius: 15px;
+    }
+
+        .btn-upload-photo:hover {
+            /* This makes the button green on hover */
+            background-color: #28a745;
+            border-color: #28a745;
+            color: #ffffff;
+        }
+
+    /* This CSS is for your icons */
+    .card-header .bi {
+        font-size: 1.5rem;
+        vertical-align: middle;
+    }
+</style>
+
+<div class="row mt-4">
+
+    <div class="col-lg-11 mx-auto">
+
+        <div class="mb-4">
+            <h2>Teacher Registration</h2>
+            <p class="text-muted">Please provide your teacher credentials and account details.</p>
+        </div>
+
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-person me-2"></i>
+                        Basic Information
+                    </h5>
+                </div>
+                <div class="card-body">
+
+                    <div class="text-center mb-3">
+                        <div class="profile-pic-placeholder">
+                            <span>(Profile)</span>
+                        </div>
+                        <label for="photoUpload" class="btn btn-sm btn-upload-photo">Upload Photo</label>
+                        <input type="file" id="photoUpload" class="d-none">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Teacher.FullName" class="form-label">Full Name</label>
+                            <input asp-for="Teacher.FullName" class="form-control" />
+                            <span asp-validation-for="Teacher.FullName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Teacher.DateOfBirth" class="form-label">Date of Birth</label>
+                            <input asp-for="Teacher.DateOfBirth" class="form-control" />
+                            <span asp-validation-for="Teacher.DateOfBirth" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Teacher.Gender" class="form-label">Gender</label>
+                            <select asp-for="Teacher.Gender" class="form-control">
+                                <option value="">-- Select Gender --</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Teacher.ContactNumber" class="form-label">Contact Number</label>
+                            <input asp-for="Teacher.ContactNumber" class="form-control" />
+                            <span asp-validation-for="Teacher.ContactNumber" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Teacher.EmailAddress" class="form-label">Email Address</label>
+                        <input asp-for="Teacher.EmailAddress" class="form-control" />
+                        <span asp-validation-for="Teacher.EmailAddress" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Teacher.Address" class="form-label">Address</label>
+                        <textarea asp-for="Teacher.Address" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-person-vcard me-2"></i>
+                        Teacher Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Teacher.TeacherId" class="form-label">Teacher ID</label>
+                            <input asp-for="Teacher.TeacherId" class="form-control" />
+                            <span asp-validation-for="Teacher.TeacherId" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Teacher.Position" class="form-label">Position</label>
+                            <input asp-for="Teacher.Position" class="form-control" placeholder="e.g., Instructor, Professor" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Teacher.Department" class="form-label">Department</label>
+                        <input asp-for="Teacher.Department" class="form-control" placeholder="e.g., Computer Engineering" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-lock me-2"></i>
+                        Account Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Teacher.Username" class="form-label">Username</label>
+                            <input asp-for="Teacher.Username" class="form-control" />
+                            <span asp-validation-for="Teacher.Username" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Teacher.Role" class="form-label">Role</label>
+                            <input asp-for="Teacher.Role" class="form-control" value="Teacher" readonly />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Teacher.Password" class="form-label">Password</label>
+                            <input asp-for="Teacher.Password" class="form-control" />
+                            <span asp-validation-for="Teacher.Password" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Teacher.ConfirmPassword" class="form-label">Confirm Password</label>
+                            <input asp-for="Teacher.ConfirmPassword" class="form-control" />
+                            <span asp-validation-for="Teacher.ConfirmPassword" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-end mb-4">
+                <button type="submit" class="btn btn-lg btn-create-teacher">Create Teacher Account</button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

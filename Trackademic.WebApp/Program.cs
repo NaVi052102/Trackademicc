@@ -5,6 +5,8 @@ using Trackademic.Core.Interfaces;
 using Trackademic.Data.Data;
 using Trackademic.Data.Repositories;
 using Trackademic.Services.Implementations;
+using Trackademic.Core.Models;
+using System.Collections.Generic; // Added for List<SelectListItem>
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -24,19 +26,20 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.IsEssential = true;
     });
 
-// --- 2. MODIFIED: Simple Razor Pages Registration ---
-// All previous authorization conventions are removed.
+// --- 2. Simple Razor Pages Registration (Avoids Auth Errors) ---
 builder.Services.AddRazorPages();
-// ----------------------------------------------------
 
-// --- 3. Register All Your Services and Repositories ---
+// --- 3. Register All Application Services ---
+// Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IClassRepository, ClassRepository>();
+// Add other repository registrations here
+// builder.Services.AddScoped<IUnitOfWork, UnitOfWork>(); 
+// ...etc...
+
+// Services
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IGradeService, GradeService>();
-// --- Add your other services/repositories here as you build them ---
-// builder.Services.AddScoped<IGradeRepository, GradeRepository>();
-// builder.Services.AddScoped<ISubjectService, SubjectService>();
+builder.Services.AddScoped<IGradeService, GradeService>(); // FIX for Grades View
 // ...etc...
 
 // Add Session support
@@ -67,6 +70,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();
-app.MapFallbackToPage("/Index"); // Fallback to your homepage
+app.MapFallbackToPage("/Index");
 
 app.Run();
