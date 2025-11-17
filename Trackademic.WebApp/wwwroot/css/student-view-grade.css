@@ -1,4 +1,4 @@
-﻿/* Rule to vertically center the content */
+﻿/* Rule to vertically center the content in the main layout area */
 main {
     display: flex;
     flex-direction: column;
@@ -32,14 +32,14 @@ main {
 }
 
     .summary-card-value.gpa {
-        color: #28a745;
+        color: #28a745; /* Theme Green */
     }
 
     .summary-card-value.failed {
-        color: #dc3545;
+        color: #dc3545; /* Theme Red */
     }
 
-/* --- BADGE STYLES --- */
+/* --- BADGE STYLES (PASSED/FAILED/INC) --- */
 .grade-badge {
     display: inline-block;
     padding: 0.4em 0.8em;
@@ -53,19 +53,19 @@ main {
 }
 
 .badge-passed {
-    color: #155724;
-    background-color: #d4edda;
+    color: #155724; /* Dark green text */
+    background-color: #d4edda; /* Light green bg */
     border: 1px solid #c3e6cb;
 }
 
 .badge-failed {
-    color: #721c24;
+    color: #721c24; /* Dark red text */
     background-color: #f8d7da;
     border: 1px solid #f5c6cb;
 }
 
 .badge-incomplete {
-    color: #383d41;
+    color: #383d41; /* Dark gray text */
     background-color: #e2e3e5;
     border: 1px solid #d6d8db;
 }
@@ -90,8 +90,15 @@ main {
 }
 
 .grade-fail {
-    color: #dc3545;
+    color: #dc3545; /* Red for failing grades (<3.0m) */
     font-weight: bold;
+}
+
+/* --- FILTER CARD COLOR (Requirement 1: Color Match) --- */
+.filter-card-green {
+    background-color: #d4edda !important;
+    border: 1px solid #c3e6cb !important;
+    color: #333333;
 }
 
 /* "SET CONFIG" BUTTON STYLE */
@@ -99,18 +106,43 @@ main {
     background-color: #6c757d;
     border-color: #6c757d;
     color: #ffffff;
-    border-radius: 150px;
+    border-radius: 150px; /* Pill shape */
 }
 
     .btn-set-config:hover {
-        background-color: #28a745;
+        background-color: #28a745; /* Green on hover */
         border-color: #28a745;
         color: #ffffff;
     }
 
 /* Card Header Style */
 .grade-table-header {
-    background-color: #d4edda;
+    background-color: #d4edda; /* Light green */
     color: #333333;
     border-bottom: 1px solid #c3e6cb;
 }
+
+/* --- DOWNLOAD BUTTON STYLE (Icon) --- */
+.btn-download-report {
+    background-color: #28a745; /* Theme green */
+    border-color: #28a745;
+    color: white;
+    border-radius: 50%; /* Make it circular */
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: background-color 0.2s;
+}
+
+    .btn-download-report:hover {
+        background-color: #1e8334;
+    }
+
+    /* Style the icon inside the download button */
+    .btn-download-report i {
+        color: white; /* Ensure the Bootstrap icon is white */
+    }
