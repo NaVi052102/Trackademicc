@@ -1,8 +1,8 @@
-@page "/Admin/CourseManagement/Grade"
-@model Trackademic.WebApp.Pages.Admin.Curriculum.GradesModel
+﻿@page
+@model Trackademic.WebApp.Pages.Teachers.GradesModel
 @{
-    Layout = "_AdminLayout";
-    ViewData["Title"] = "Grade Management (Admin)";
+    Layout = "_TeachersLayout";
+    ViewData["Title"] = "Grades";
 }
 
 <style>
@@ -29,14 +29,16 @@
     .btn-apply-filters:hover { background-color: #5a6268; border-color: #545b62; }
     
     .btn-save-all {
-        background-color: #0d6efd; border-color: #0d6efd; color: white;
+        background-color: #198754; /* Green for Teacher Save */
+        border-color: #198754;
+        color: white;
         min-width: 180px; font-weight: 600; border-radius: 50px;
     }
-    .btn-save-all:hover { background-color: #0b5ed7; }
+    .btn-save-all:hover { background-color: #157347; }
 
     /* --- Grade Sheet Table --- */
     .grade-list-table th {
-        background-color: #6c757d; /* Admin Gray Header */
+        background-color: #6c757d;
         color: white;
         vertical-align: middle;
         font-weight: 600;
@@ -54,7 +56,7 @@
 
     .grade-list-table .text-left { text-align: left; }
 
-    /* --- Input Styling (Clean & Minimal) --- */
+    /* --- Input Styling --- */
     .table-input {
         border: 1px solid #ced4da;
         border-radius: 4px;
@@ -63,7 +65,7 @@
         text-align: center;
         font-weight: 600;
         width: 100%;
-        max-width: 80px; /* Keeps inputs compact */
+        max-width: 80px;
         transition: all 0.2s;
     }
     
@@ -73,7 +75,6 @@
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
     }
 
-    /* Read-only fields look like plain text */
     .table-readonly {
         background-color: transparent;
         border: none;
@@ -83,12 +84,11 @@
         text-align: left;
         padding-left: 0;
     }
-    
     .table-readonly.text-center { text-align: center; }
 
     /* --- Grade Coloring --- */
-    .grade-failing { color: #dc3545; } /* Red for 5.0 */
-    .grade-passing { color: #198754; } /* Green for 1.0-3.0 */
+    .grade-failing { color: #dc3545; } 
+    .grade-passing { color: #198754; } 
     
     /* --- Status Dropdown --- */
     .status-select {
@@ -107,6 +107,8 @@
 
     @* --- Filter Bar --- *@
     <div class="grade-filter-bar">
+        
+        @* Top Row: Academic Period *@
         <form method="get" class="d-flex flex-wrap align-items-center justify-content-between gap-3 border-bottom pb-3">
             <div class="d-flex flex-wrap gap-4">
                 <div class="filter-group">
@@ -117,27 +119,18 @@
                     <label class="select-label">Semester:</label>
                     <select asp-for="Semester" asp-items="Model.Semesters" class="form-select" style="width: 130px;"></select>
                 </div>
-                <div class="filter-group">
-                    <label class="select-label">Dept:</label>
-                    <select asp-for="DepartmentCode" asp-items="Model.AvailableDepartments" class="form-select" style="width: 180px;" onchange="this.form.submit()"></select>
-                </div>
             </div>
+            
             <button type="submit" class="btn btn-sm btn-apply-filters">
-                <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Context
             </button>
         </form>
 
+        @* Bottom Row: Class Selection & Search (Removed Subject Dropdown) *@
         <form method="get" class="d-flex flex-wrap align-items-center gap-3">
+            @* Hidden fields to preserve top row state *@
             <input type="hidden" asp-for="SchoolYear" />
             <input type="hidden" asp-for="Semester" />
-            <input type="hidden" asp-for="DepartmentCode" />
-
-            <div class="filter-group flex-grow-1">
-                <label class="select-label">Subject:</label>
-                <select asp-for="SubjectCode" asp-items="Model.AvailableSubjects" class="form-select w-100" onchange="this.form.submit()">
-                    <option value="">-- Select Subject --</option>
-                </select>
-            </div>
 
             <div class="filter-group flex-grow-1">
                 <label class="select-label">Class:</label>
@@ -157,22 +150,25 @@
     <div class="card shadow-sm">
         <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
             <h5 class="mb-0 text-dark">
-                <i class="bi bi-grid-3x3 me-2"></i> 
-                @if(!string.IsNullOrEmpty(Model.SubjectCode)) { 
-                    <span class="text-primary fw-bold">@Model.SubjectCode</span> <span>- @Model.SubjectDescription</span>
+                <i class="bi bi-journal-bookmark-fill me-2"></i> 
+                @* Subject info is now derived from the selected Class *@
+                @if(!string.IsNullOrEmpty(Model.SubjectDisplayCode)) { 
+                    <span class="text-primary fw-bold">@Model.SubjectDisplayCode</span> <span>- @Model.SubjectDescription</span>
                 } else { 
                     <span>Grade Sheet</span> 
                 }
             </h5>
-            <span class="badge bg-secondary">@Model.SelectedTermDisplay</span>
+            <small class="text-muted fw-bold">@Model.SelectedTermDisplay</small>
         </div>
         
         <div class="card-body p-0">
             <div class="table-responsive">
                 <form method="post" asp-page-handler="UpdateAll">
-                    <input type="hidden" asp-for="SchoolYear" /><input type="hidden" asp-for="Semester" />
-                    <input type="hidden" asp-for="DepartmentCode" /><input type="hidden" asp-for="SubjectCode" />
-                    <input type="hidden" asp-for="ClassId" /><input type="hidden" asp-for="SearchTerm" />
+                    @* Preserve filters for postback *@
+                    <input type="hidden" asp-for="SchoolYear" />
+                    <input type="hidden" asp-for="Semester" />
+                    <input type="hidden" asp-for="ClassId" />
+                    <input type="hidden" asp-for="SearchTerm" />
 
                     <table class="table table-hover mb-0 grade-list-table">
                         <thead>
@@ -185,7 +181,6 @@
                                 <th style="width: 90px;">Final</th>
                                 <th style="width: 90px;">Final Grade</th>
                                 <th style="width: 120px;">Status</th>
-                                @* REMOVED: Actions Column *@
                             </tr>
                         </thead>
                         <tbody>
@@ -194,8 +189,8 @@
                                 @for (int i = 0; i < Model.Grades.Count; i++)
                                 {
                                     var g = Model.Grades[i];
-                                    string gradeColor = g.FinalGrade >= 5.0 ? "grade-failing" : (g.FinalGrade > 0 ? "grade-passing" : "");
-                                    string statusColor = g.Status == "PASSED" ? "text-success" : (g.Status == "FAILED" ? "text-danger" : "text-muted");
+                                    string statusClass = g.Status == "FAILED" ? "status-fail" : (g.Status == "PASSED" ? "status-pass" : "status-inc");
+                                    string gradeColor = g.FinalGrade >= 5.0 ? "grade-failing" : (g.FinalGrade > 0 && g.FinalGrade <= 3.0 ? "grade-passing" : "");
 
                                     <tr>
                                         <td class="text-muted">@(i + 1)</td>
@@ -205,7 +200,7 @@
                                             <input asp-for="Grades[i].StudentIdNumber" class="table-readonly text-center w-100" readonly />
                                         </td>
                                         <td class="text-left">
-                                            <input asp-for="Grades[i].StudentName" class="table-readonly w-100" readonly />
+                                            <input asp-for="Grades[i].StudentName" class="table-readonly w-100 text-start" readonly />
                                         </td>
                                         <td>
                                             <input asp-for="Grades[i].Program" class="table-readonly text-center w-100" readonly />
@@ -221,7 +216,7 @@
                                             <input asp-for="Grades[i].FinalGrade" type="number" step="0.1" class="table-input @gradeColor" placeholder="0.0" />
                                         </td>
                                         <td>
-                                            <select asp-for="Grades[i].Status" class="form-select form-select-sm status-select @statusColor">
+                                            <select asp-for="Grades[i].Status" class="form-select form-select-sm status-select @statusClass">
                                                 <option value="PASSED" class="text-success fw-bold">PASSED</option>
                                                 <option value="FAILED" class="text-danger fw-bold">FAILED</option>
                                                 <option value="INC" class="text-warning fw-bold">INC</option>
@@ -236,7 +231,7 @@
                                 <tr>
                                     <td colspan="8" class="text-center text-muted py-5">
                                         <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
-                                        No students found. Please select a Class.
+                                        No students found in this class.
                                     </td>
                                 </tr>
                             }

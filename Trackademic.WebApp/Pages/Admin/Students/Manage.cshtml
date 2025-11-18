@@ -1,14 +1,12 @@
 @page
-@model Trackademic.Pages.Admin.Students.ManageModel
+@model Trackademic.WebApp.Pages.Admin.Students.ManageModel
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Manage Students";
 }
 
 <style>
-    /* --- STYLE ADAPTATION FROM TEACHER CLASSES PAGE ---
-           These styles ensure the look and feel matches your provided design.
-        */
+    /* --- STYLE ADAPTATION FROM TEACHER CLASSES PAGE --- */
     .students-container {
         padding: 1.5rem;
     }
@@ -19,7 +17,6 @@
         border-radius: 8px;
         padding: 1.5rem;
         margin-bottom: 2rem;
-        /* Updated display for better layout of multiple filters */
         display: flex;
         flex-direction: column;
         gap: 1rem;
@@ -56,27 +53,9 @@
         vertical-align: middle;
     }
 
-    .progress-bar-sm {
-        height: 8px;
-        font-size: 0.65rem;
-        line-height: 8px;
-    }
-
-    .performance-cell {
-        min-width: 120px;
-    }
-
-    .status-text {
-        font-weight: 600;
-        font-size: 0.85rem;
-    }
-
-    .status-pass {
-        color: #198754;
-    }
-
-    .status-fail {
-        color: #dc3545;
+    /* Performance styles REMOVED or adapted */
+    .admin-info-cell {
+        min-width: 180px;
     }
 
     .search-input {
@@ -114,7 +93,6 @@
                     <input type="text" asp-for="SearchTerm" class="form-control" placeholder="Search by name or ID...">
                     @if (!string.IsNullOrEmpty(Model.SearchTerm))
                     {
-                        @* Path changed to relative `./ManageStudent` to clear search *@
                         <a asp-page="./ManageStudent" class="btn btn-outline-danger" title="Clear Search">
                             <i class="bi bi-x-lg"></i>
                         </a>
@@ -143,8 +121,11 @@
                             <th>#</th>
                             <th>ID Number</th>
                             <th>Full Name</th>
+                            @* NEW COLUMNS ADDED *@
+                            <th class="admin-info-cell">Department / Program</th>
+                            <th class="admin-info-cell">Contact Info</th>
+                            
                             <th>Enrollment Date</th>
-                            <th class="text-center performance-cell">Overall Performance</th>
                             <th class="text-center">Actions</th>
                         </tr>
                     </thead>
@@ -158,39 +139,14 @@
                                     <td>@(i + 1)</td>
                                     <td>@student.IDNumber</td>
                                     <td>@student.FullName</td>
+                                    
+                                    @* NEW DATA CELLS *@
+                                    <td>@student.Department</td>
+                                    <td>@student.ContactInfo</td>
+                                    
                                     <td>@student.EnrollmentDate.ToShortDateString()</td>
 
-                                    @* Performance Cell Styling *@
                                     <td class="text-center">
-                                        @{
-                                            // Logic to determine badge and bar color/status (can be adjusted)
-                                            string badgeClass = student.OverallPerformance switch
-                                            {
-                                                >= 85 => "bg-success",
-                                                >= 70 => "bg-warning text-dark",
-                                                _ => "bg-danger"
-                                            };
-                                            string statusClass = student.OverallPerformance >= 70 ? "status-pass" : "status-fail";
-                                            // Ensure performance value is capped at 100 for progress bar
-                                            double displayPerformance = Math.Min(student.OverallPerformance, 100);
-                                        }
-                                        <small class="d-block fw-bold mb-1">@student.OverallPerformance.ToString("F1")%</small>
-                                        <div class="progress progress-bar-sm">
-                                            <div class="progress-bar @badgeClass"
-                                                 role="progressbar"
-                                                 style="width: @displayPerformance%"
-                                                 aria-valuenow="@displayPerformance"
-                                                 aria-valuemin="0"
-                                                 aria-valuemax="100">
-                                            </div>
-                                        </div>
-                                        <span class="status-text @statusClass mt-1 d-block">
-                                            @(student.OverallPerformance >= 70 ? "Passing" : "Failing")
-                                        </span>
-                                    </td>
-
-                                    <td class="text-center">
-                                        @* CONFIRMED PATH: /Admin/Students/StudentProfile *@
                                         <a asp-page="/Admin/Students/Profile" asp-route-id="@student.StudentID" class="btn btn-sm btn-info text-white me-1">Details</a>
                                         <a asp-page="./Delete" asp-route-id="@student.StudentID" class="btn btn-sm btn-danger">Delete</a>
                                     </td>
@@ -200,7 +156,8 @@
                         else
                         {
                             <tr>
-                                <td colspan="6" class="text-center text-muted">No students match the current filters.</td>
+                                @* Colspan is 7 now (ID, Name, Dept, Contact, Date, Actions) *@
+                                <td colspan="7" class="text-center text-muted">No students match the current filters.</td>
                             </tr>
                         }
                     </tbody>

@@ -1,0 +1,319 @@
+﻿@page
+@model Trackademic.WebApp.Pages.Teachers.ProfileModel
+@{
+    Layout = "_TeachersLayout";
+    ViewData["Title"] = "Profile";
+}
+
+<style>
+    /* --- Styles for Scrolling and Layout --- */
+    .profile-scroll-wrapper {
+        max-height: 85vh;
+        overflow-y: auto; 
+        overflow-x: hidden;
+        padding-right: 15px;
+    }
+    
+    .profile-pic-placeholder {
+        width: 150px;
+        height: 150px;
+        background-color: #e9ecef;
+        border: 1px solid #ced4da;
+        border-radius: 50%;
+        margin: 0 auto 10px auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    /* --- Styles for Buttons and Edit Mode --- */
+    .btn-update-profile {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #ffffff;
+        border-radius: 150px;
+        height: 50px;
+        width: 200px;
+    }
+
+        .btn-update-profile:hover {
+            background-color: #28a745;
+            border-color: #28a745;
+            color: #ffffff;
+        }
+
+    .btn-discard-changes {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #ffffff;
+        border-radius: 150px;
+        height: 50px;
+        width: 200px;
+    }
+
+        .btn-discard-changes:hover {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+    
+    .btn-upload-photo {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #ffffff;
+        border-radius: 15px;
+    }
+
+        .btn-upload-photo:hover {
+            background-color: #28a745;
+            border-color: #28a745;
+            color: #ffffff;
+        }
+
+    #uploadPhotoContainer,
+    #editActionButtons {
+        display: none;
+    }
+
+    .edit-mode #uploadPhotoContainer,
+    .edit-mode #editActionButtons {
+        display: block;
+    }
+
+    .edit-mode #editProfileBtn {
+        display: none;
+    }
+
+    .view-mode #editProfileBtn {
+        display: block;
+    }
+
+    .form-control:disabled {
+        background-color: #e9ecef;
+        opacity: 1;
+        cursor: not-allowed;
+    }
+</style>
+
+<div class="profile-scroll-wrapper"> 
+
+    <div class="row mt-4">
+
+        <div class="col-lg-11 mx-auto">
+
+            <div class="mb-4">
+                <p class="text-muted">View and manage your teacher credentials and account details.</p>
+            </div>
+
+            @if (TempData["Message"] != null)
+            {
+                <div class="alert alert-@TempData["MessageType"] alert-dismissible fade show" role="alert">
+                    @TempData["Message"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @* CRUCIAL CHANGE: Added enctype="multipart/form-data" for file upload *@
+            <form method="post" id="profileForm" enctype="multipart/form-data"> 
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 d-flex align-items-center">
+                            <i class="bi bi-person me-2"></i> Basic Information
+                        </h5>
+                        <button type="button" id="editProfileBtn" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                    </div>
+                    <div class="card-body">
+
+                        <div class="text-center mb-3">
+                            <div class="profile-pic-placeholder">
+                                @if (string.IsNullOrEmpty(Model.ProfilePictureUrl))
+                                {
+                                    <span>(Profile)</span>
+                                }
+                                else
+                                {
+                                    <img src="@Model.ProfilePictureUrl" alt="Profile Picture" class="img-fluid rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
+                                }
+                            </div>
+                            <div id="uploadPhotoContainer">
+                                <label for="photoUpload" class="btn btn-sm btn-upload-photo">Upload Photo</label>
+                                @* CRUCIAL CHANGE: Added name="PhotoUpload" to bind to the IFormFile property *@
+                                <input type="file" id="photoUpload" name="PhotoUpload" class="d-none"> 
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="teacherFirstName" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="teacherFirstName" asp-for="FirstName">
+                                <span asp-validation-for="FirstName" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="teacherLastName" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="teacherLastName" asp-for="LastName">
+                                <span asp-validation-for="LastName" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="teacherDob" class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" id="teacherDob" asp-for="DateOfBirth">
+                                <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="teacherContactNumber" class="form-label">Contact Number</label>
+                                <input type="tel" class="form-control" id="teacherContactNumber" asp-for="ContactNumber">
+                                <span asp-validation-for="ContactNumber" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="teacherEmailAddress" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="teacherEmailAddress" asp-for="Email">
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="teacherAddress" class="form-label">Address</label>
+                            <textarea class="form-control" id="teacherAddress" rows="3" asp-for="Address"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 d-flex align-items-center">
+                            <i class="bi bi-person-vcard me-2"></i> Teacher Details
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="teacherId" class="form-label">Teacher ID</label>
+                                <input type="text" class="form-control" id="teacherId" asp-for="TeacherId" disabled>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="teacherDepartment" class="form-label">Department</label>
+                                @* DEPARTMENT IS DISABLED - Set by Admin *@
+                                <select class="form-control" 
+                                        id="teacherDepartment" 
+                                        asp-for="DepartmentId" 
+                                        asp-items="@(new SelectList(Model.DepartmentOptions, "Value", "Text"))"
+                                        disabled> 
+                                    <option value="">-- Select Department --</option>
+                                </select>
+                                <span asp-validation-for="DepartmentId" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 d-flex align-items-center">
+                            <i class="bi bi-lock me-2"></i> Account Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="teacherUsername" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="teacherUsername" asp-for="Username">
+                                <span asp-validation-for="Username" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="teacherRole" class="form-label">Role</label>
+                                <input type="text" class="form-control" id="teacherRole" asp-for="Role" readonly>
+                            </div>
+                        </div>
+
+                        <div id="passwordFields" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="password" class="form-label">New Password</label>
+                                    <input type="password" class="form-control" id="password" asp-for="NewPassword">
+                                    <small class="text-muted">Leave blank to keep current password.</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                                    <input type="password" class="form-control" id="confirmPassword" asp-for="ConfirmNewPassword">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-end mb-4" id="editActionButtons">
+                    <button type="submit" asp-page-handler="Discard" class="btn btn-lg btn-discard-changes me-2" formnovalidate>Discard Changes</button>
+                    <button type="submit" asp-page-handler="Update" class="btn btn-lg btn-update-profile">Update Profile</button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div> 
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+            // --- SELECTORS ---
+            const profileForm = $('#profileForm');
+            const editProfileBtn = $('#editProfileBtn');
+            const editActionButtons = $('#editActionButtons');
+            const uploadPhotoContainer = $('#uploadPhotoContainer');
+            const passwordFields = $('#passwordFields');
+
+            // --- JAVASCRIPT: Exclude TeacherId, Role, and the DISABLED Department dropdown ---
+            const formInputs = profileForm.find('input, textarea, select').not('#teacherId').not('#teacherRole').not('#teacherDepartment');
+
+            // --- FUNCTIONS ---
+            function setViewMode() {
+                formInputs.prop('disabled', true);
+                editProfileBtn.html('<i class="bi bi-pencil"></i> Edit');
+                editActionButtons.hide();
+                uploadPhotoContainer.hide();
+                passwordFields.hide();
+                profileForm.removeClass('edit-mode').addClass('view-mode');
+            }
+
+            function setEditMode() {
+                formInputs.prop('disabled', false); 
+                editProfileBtn.html('<i class="bi bi-x-lg"></i> Cancel');
+                editActionButtons.show();
+                uploadPhotoContainer.show();
+                passwordFields.show();
+                profileForm.removeClass('view-mode').addClass('edit-mode');
+            }
+
+            // --- PAGE LOAD ---
+            setViewMode();
+
+            // --- CLICK HANDLER ---
+            editProfileBtn.on('click', function () {
+                if (profileForm.hasClass('view-mode')) {
+                    setEditMode();
+                } else {
+                    if (confirm("Are you sure you want to cancel? Any unsaved changes will be lost.")) {
+                        location.reload();
+                    }
+                }
+            });
+
+            // --- Handle Validation Errors ---
+            @if (!ViewContext.ModelState.IsValid)
+            {
+                    <text>
+                        setEditMode();
+                    </text>
+            }
+        });
+    </script>
+}

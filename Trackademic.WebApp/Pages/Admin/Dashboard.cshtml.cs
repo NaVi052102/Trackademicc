@@ -4,113 +4,99 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Trackademic.Pages.Admin
+namespace Trackademic.WebApp.Pages.Admin
 {
+    // Ensure the namespace matches your file path, e.g., Trackademic.Pages.Admin
     public class DashboardModel : PageModel
     {
-        // --- Filter Properties (Kept for period-based reporting) ---
+        // --- Filter Properties ---
         [BindProperty(SupportsGet = true)]
         public string SchoolYear { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public string Semester { get; set; }
 
+        // Dropdown Lists (Static for now)
         public List<SelectListItem> SchoolYears { get; } = new List<SelectListItem>
         {
             new SelectListItem { Value = "2930", Text = "2930" },
             new SelectListItem { Value = "2829", Text = "2829" },
-            new SelectListItem { Value = "2728", Text = "2728" },
-            new SelectListItem { Value = "2627", Text = "2627" },
-            new SelectListItem { Value = "2526", Text = "2526" },
-            new SelectListItem { Value = "2425", Text = "2425" },
-            new SelectListItem { Value = "2324", Text = "2324" },
-            new SelectListItem { Value = "2223", Text = "2223" },
+            new SelectListItem { Value = "2425", Text = "2425" }
         };
 
         public List<SelectListItem> Semesters { get; } = new List<SelectListItem>
         {
             new SelectListItem { Value = "First", Text = "First" },
             new SelectListItem { Value = "Second", Text = "Second" },
-            new SelectListItem { Value = "Summer", Text = "Summer" },
+            new SelectListItem { Value = "Summer", Text = "Summer" }
         };
 
-        // --- System-Wide Summary Data ---
+        // --- Summary Data (Info Cards) ---
         public int TotalStudents { get; set; }
         public int TotalTeachers { get; set; }
         public int TotalDepartments { get; set; }
         public int TotalSubjects { get; set; }
-        // OverallGradeAverage property removed as requested
 
-        // Departmental Performance Analytics
-        public List<DepartmentalPerformanceItem> DepartmentalPerformance { get; set; } = new List<DepartmentalPerformanceItem>();
-
-        // RecentActivities list removed as requested
+        // --- Departmental Analytics Data ---
+        public List<DepartmentAnalyticsViewModel> DepartmentalPerformance { get; set; } = new List<DepartmentAnalyticsViewModel>();
 
 
         public void OnGet()
         {
-            // Set defaults for the filters
+            // Set defaults if no filters are selected
             if (string.IsNullOrEmpty(SchoolYear)) SchoolYear = "2425";
             if (string.IsNullOrEmpty(Semester)) Semester = "First";
-
-            // 1. Fetch System-Wide Summary Data (Dummy Data)
-            TotalStudents = 1200;
+            
+            // 1. Load Summary Data (Simulated)
+            TotalStudents = 1250;
             TotalTeachers = 45;
             TotalDepartments = 8;
             TotalSubjects = 150;
-            // OverallGradeAverage assignment removed
-
-            // 2. Load Departmental Performance Data
-            LoadDepartmentalPerformance();
-
-            // 3. Load Recent Activities (System Snapshot) - REMOVED
-            // LoadRecentActivities();
+            
+            // 2. Load Departmental Analytics (Simulated)
+            LoadDepartmentalAnalytics();
         }
 
-        private void LoadDepartmentalPerformance()
+        private void LoadDepartmentalAnalytics()
         {
-            // Simulate fetching performance data aggregated by department
-            DepartmentalPerformance.Add(new DepartmentalPerformanceItem
-            {
-                DepartmentName = "Computer Engineering",
-                AveragePerformance = 85,
-                ClassesOffered = 22,
-                PassingRate = 92 // 92% of students in this dept passed their classes
+            // Simulated data for the Departmental Performance card
+            DepartmentalPerformance.Add(new DepartmentAnalyticsViewModel 
+            { 
+                DepartmentName = "Computer Engineering", 
+                AveragePerformance = 82,
+                PassingRate = 91,
+                ClassesOffered = 15
             });
-            DepartmentalPerformance.Add(new DepartmentalPerformanceItem
-            {
-                DepartmentName = "Electronics Engineering",
-                AveragePerformance = 72,
-                ClassesOffered = 18,
-                PassingRate = 78
+            DepartmentalPerformance.Add(new DepartmentAnalyticsViewModel 
+            { 
+                DepartmentName = "Civil Engineering", 
+                AveragePerformance = 71,
+                PassingRate = 78,
+                ClassesOffered = 12
             });
-            DepartmentalPerformance.Add(new DepartmentalPerformanceItem
-            {
-                DepartmentName = "General Education",
-                AveragePerformance = 91,
-                ClassesOffered = 45,
-                PassingRate = 98
+            DepartmentalPerformance.Add(new DepartmentAnalyticsViewModel 
+            { 
+                DepartmentName = "Electrical Engineering", 
+                AveragePerformance = 65,
+                PassingRate = 60,
+                ClassesOffered = 10
+            });
+            DepartmentalPerformance.Add(new DepartmentAnalyticsViewModel 
+            { 
+                DepartmentName = "General Education", 
+                AveragePerformance = 88,
+                PassingRate = 95,
+                ClassesOffered = 25
             });
         }
-
-        // private void LoadRecentActivities() { ... } // Method removed
     }
 
-    // ViewModel for Departmental Performance Analytics (Retained)
-    public class DepartmentalPerformanceItem
+    // ViewModel for Departmental Performance Analytics
+    public class DepartmentAnalyticsViewModel
     {
         public string DepartmentName { get; set; }
-        public int AveragePerformance { get; set; } // Average student grade in the department
-        public int ClassesOffered { get; set; }
-        public int PassingRate { get; set; } // % of students who passed their classes
-    }
-
-    // ViewModel for Recent System Activity (Removed as requested, but keeping the class definition here 
-    // for completeness, though it is no longer used in the DashboardModel)
-    public class RecentActivityItem
-    {
-        public string Description { get; set; }
-        public string Timestamp { get; set; }
-        public string Type { get; set; } // e.g., "Approval", "Alert", "System"
+        public int AveragePerformance { get; set; } // Overall student average score in the department's classes
+        public int PassingRate { get; set; }        // Percentage of students passing
+        public int ClassesOffered { get; set; }     // Total classes offered in the period
     }
 }

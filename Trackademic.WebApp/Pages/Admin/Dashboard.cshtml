@@ -1,5 +1,5 @@
 @page
-@model Trackademic.Pages.Admin.DashboardModel
+@model Trackademic.WebApp.Pages.Admin.DashboardModel
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "StudentRegistration";
@@ -44,20 +44,7 @@
         opacity: 0.8;
     }
 
-    /* Quick Links */
-    .quick-link-btn {
-        /* Adjusted for full width within the col-md-6 containers */
-        width: 100%;
-        margin: 0; /* Remove margin since we use g-3 for spacing */
-        padding: 1rem 1rem;
-        font-size: 1rem;
-        font-weight: 600;
-        text-align: left;
-        display: flex;
-        align-items: center;
-        border-radius: 8px; /* Added rounded corners for links */
-        transition: all 0.2s;
-    }
+    /* Quick Links styles REMOVED */
 
     /* Departmental Analytics */
     .analytic-item-header {
@@ -150,74 +137,9 @@
 
     <div class="row">
 
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0 d-flex align-items-center">
-                        <i class="bi bi-lightning-charge me-2"></i> Quick Links
-                    </h5>
-                </div>
-                <!-- Updated Quick Links Section for better responsiveness and correct paths -->
-                <div class="card-body">
-                    <div class="row g-3">
+        @* REMOVED: The entire col-lg-6 block for Quick Links *@
 
-                        <div class="col-6">
-                            <a asp-page="./Students" class="btn btn-outline-success quick-link-btn">
-                                <i class="bi bi-people-fill me-3 fs-4"></i> Manage Students
-                            </a>
-                        </div>
-
-                        <div class="col-6">
-                            <a asp-page="./Teachers" class="btn btn-outline-primary quick-link-btn">
-                                <i class="bi bi-person-video2 me-3 fs-4"></i> Manage Teachers
-                            </a>
-                        </div>
-
-                        <div class="col-6">
-                            <a asp-page="./Departments" class="btn btn-outline-warning text-dark quick-link-btn">
-                                <i class="bi bi-house-door-fill me-3 fs-4"></i> Manage Departments
-                            </a>
-                        </div>
-
-                        <div class="col-6">
-                            <a asp-page="./Subjects" class="btn btn-outline-info quick-link-btn">
-                                <i class="bi bi-book-half me-3 fs-4"></i> Manage Subjects
-                            </a>
-                        </div>
-
-                        <div class="col-6">
-                            <a asp-page="./Classes" class="btn btn-outline-secondary quick-link-btn">
-                                <i class="bi bi-easel-fill me-3 fs-4"></i> Manage Classes
-                            </a>
-                        </div>
-
-                        <!-- NEW: Manage Grades Link with inferred path -->
-                        <div class="col-6">
-                            <a asp-page="./CourseManagement/Grade" class="btn btn-outline-dark quick-link-btn">
-                                <i class="bi bi-patch-check-fill me-3 fs-4"></i> Manage Grades
-                            </a>
-                        </div>
-
-                        <div class="col-6">
-                            <a asp-page="./AuditLog" class="btn btn-outline-danger quick-link-btn">
-                                <i class="bi bi-clipboard-data-fill me-3 fs-4"></i> View Audit Log
-                            </a>
-                        </div>
-
-                        <!-- Added for symmetry and general utility -->
-                        <div class="col-6">
-                            <a asp-page="./Settings" class="btn btn-outline-secondary quick-link-btn">
-                                <i class="bi bi-gear-fill me-3 fs-4"></i> System Settings
-                            </a>
-                        </div>
-
-                    </div>
-                </div>
-                <!-- End of Updated Quick Links Section -->
-            </div>
-        </div>
-
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-12 mb-4"> @* Changed from col-lg-6 to col-lg-12 *@
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white">
                     <h5 class="mb-0 d-flex align-items-center">

@@ -1,93 +1,141 @@
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
-namespace Trackademic.Pages.Admin.Students
+namespace Trackademic.WebApp.Pages.Admin.Students
 {
-    // This is the main PageModel class
     public class ProfileModel : PageModel
     {
-        // [BindProperty] tells the page to connect this object to the form
         [BindProperty]
         public StudentProfileViewModel Student { get; set; } = new StudentProfileViewModel();
 
-        // This runs when the page is first loaded
-        public void OnGet()
-        {
-            // In a real app, you would load this data from your database
-            // using a student ID (e.g., from the logged-in user)
-            Student = new StudentProfileViewModel
-            {
-                FullName = "Arbien M. Armenion",
-                DateOfBirth = new DateTime(2000, 5, 15),
-                Gender = "Male",
-                ContactNumber = "09123456789",
-                EmailAddress = "arbien.armenion@example.com",
-                Address = "123 Main St, Consolacion, Cebu",
-                StudentId = "TRK-001-2023",
-                YearLevel = "3rd Year",
-                Course = "BS Computer Engineering",
-                Guardian = "Jane Doe (09987654321)",
-                Username = "arbien.m",
-                Role = "Student"
-            };
-        }
+        public int StudentRouteId { get; set; }
 
-        // This runs when the "Update Profile" button is clicked
-        public IActionResult OnPostUpdate()
+        public List<SelectListItem> Departments { get; set; }
+
+        public IActionResult OnGet(int id)
         {
-            if (!ModelState.IsValid)
+            StudentRouteId = id;
+            
+            // Loads static departments for the dropdown
+            LoadDepartments();
+
+            // --- Mock Data Setup ---
+            Student = id switch
             {
-                // If the form has errors (e.g., missing name),
-                // set an error message and stay on the page.
-                TempData["Message"] = "Error updating profile. Please check the fields.";
-                TempData["MessageType"] = "danger"; // This is a class for a red alert box
-                return Page();
+                101 => new StudentProfileViewModel
+                {
+                    FirstName = "Arbien", 
+                    LastName = "Armenion", 
+                    DateOfBirth = new DateTime(2000, 5, 15),
+                    ContactNumber = "09123456789",
+                    Email = "arbien.armenion@example.com",
+                    Address = "123 Main St, Consolacion, Cebu",
+                    StudentId = "TRK-001-2023",
+                    Username = "arbien.m",
+                    Role = "Student"
+                },
+                _ => new StudentProfileViewModel { StudentId = "INVALID" }
+            };
+
+            if (string.IsNullOrEmpty(Student.FirstName))
+            {
+                TempData["Message"] = "Student not found.";
+                TempData["MessageType"] = "danger";
+                return RedirectToPage("./Manage");
             }
 
-            // In a real app, you would save the "Student" object's data
-            // to the database here.
+            return Page();
+        }
+
+        public IActionResult OnPostUpdate()
+        {
+            // Reload departments for postback validation
+            LoadDepartments();
+            
+            if (!ModelState.IsValid)
+            {
+                TempData["Message"] = "Error updating profile. Please check the fields.";
+                TempData["MessageType"] = "danger";
+                return Page(); 
+            }
 
             TempData["Message"] = "Profile updated successfully!";
-            TempData["MessageType"] = "success"; // This is a class for a green alert box
-            return RedirectToPage("/Student/StudentProfile"); // Reload the page
+            TempData["MessageType"] = "success";
+
+            // Redirect to the same page (PRG pattern)
+            return RedirectToPage("./Profile", new { id = StudentRouteId });
         }
 
-        // This runs when the "Discard Changes" button is clicked
         public IActionResult OnPostDiscard()
         {
-            // Simply reload the page. This will call OnGet() again and
-            // load the original, unchanged data from the database.
             TempData["Message"] = "Changes discarded.";
-            TempData["MessageType"] = "info"; // This is a class for a blue alert box
-            return RedirectToPage("/Student/StudentProfile");
+            TempData["MessageType"] = "info";
+            return RedirectToPage("./Profile", new { id = StudentRouteId });
+        }
+        
+        // Helper method to load static department data
+        private void LoadDepartments()
+        {
+            var staticDepartments = new List<StaticDepartmentModel>
+            {
+                new StaticDepartmentModel { Id = 1, Name = "Computer Engineering" },
+                new StaticDepartmentModel { Id = 2, Name = "Electrical Engineering" },
+                new StaticDepartmentModel { Id = 3, Name = "Civil Engineering" },
+            };
+
+            Departments = staticDepartments.Select(d => new SelectListItem 
+            {
+                Value = d.Id.ToString(), 
+                Text = d.Name            
+            }).ToList();
         }
     }
 
-    // This is a "ViewModel" - a simple class to hold the data for the page.
+    // --- ViewModel for the Student Profile Data (Database Aligned) ---
     public class StudentProfileViewModel
     {
-        [Required]
-        public string FullName { get; set; }
-        [Required]
+        [Required(ErrorMessage = "First Name is required.")]
+        [Display(Name = "First Name")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Last Name is required.")]
+        [Display(Name = "Last Name")]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Date of Birth is required.")]
         [DataType(DataType.Date)]
         public DateTime DateOfBirth { get; set; }
-        public string Gender { get; set; }
-        [Required]
+
+        [Required(ErrorMessage = "Contact Number is required.")]
         [Phone]
-        public string ContactNumber { get; set; }
-        [Required]
+        public string ContactNumber { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "Email Address is required.")]
         [EmailAddress]
-        public string EmailAddress { get; set; }
-        public string Address { get; set; }
+        [Display(Name = "Email Address")]
+        public string Email { get; set; } = string.Empty;
+
+        public string Address { get; set; } = string.Empty;
+
         [Required]
-        public string StudentId { get; set; }
-        public string YearLevel { get; set; }
-        public string Course { get; set; }
-        public string Guardian { get; set; }
-        [Required]
-        public string Username { get; set; }
-        public string Role { get; set; }
+        [Display(Name = "Student ID")]
+        public string StudentId { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Username is required.")]
+        public string Username { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
+
+        public string ProfilePictureUrl { get; set; } = string.Empty;
+        public IFormFile PhotoUpload { get; set; } = default!;
     }
+    
+    // Helper model for department dropdown
+    // This MUST BE DELETED if it is a duplicate in your project.
 }

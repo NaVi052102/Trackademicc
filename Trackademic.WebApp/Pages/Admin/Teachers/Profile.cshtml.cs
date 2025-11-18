@@ -1,12 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
-namespace Trackademic.Pages.Admin.Teachers
+namespace Trackademic.WebApp.Pages.Admin.Teachers
 {
-    // The model class must match the @model directive in TeacherProfile.cshtml
     public class ProfileModel : PageModel
     {
         // Binds the ViewModel to the form fields
@@ -14,135 +17,164 @@ namespace Trackademic.Pages.Admin.Teachers
         public TeacherProfileViewModel Teacher { get; set; } = new TeacherProfileViewModel();
 
         // Property to hold the ID passed via the route (e.g., ?id=501)
-        public int TeacherId { get; set; }
+        public int TeacherRouteId { get; set; }
+
+        // Property to hold the Department options for the dropdown
+        public List<SelectListItem> Departments { get; set; }
 
         public IActionResult OnGet(int id)
         {
-            TeacherId = id;
-
-            // In a real application, you would use 'id' to load teacher data from a database.
-            // For now, we use mock data.
+            TeacherRouteId = id;
+            
+            // Load departments for the dropdown
+            LoadDepartments();
 
             // --- Mock Data Setup ---
             Teacher = id switch
             {
-                // Example 1: Match the mock data used in ManageTeacherModel
                 501 => new TeacherProfileViewModel
                 {
-                    FullName = "Dela Cruz, Maria",
+                    FirstName = "Maria",
+                    LastName = "Dela Cruz",
                     DateOfBirth = new DateTime(1985, 10, 20),
-                    Gender = "Female",
                     ContactNumber = "09171234567",
-                    EmailAddress = "maria@school.edu",
+                    Email = "maria@school.edu",
                     Address = "Unit 101, Makati City, Metro Manila",
                     TeacherId = "T-22-010",
-                    Position = "Professor",
-                    Department = "Computer Science",
+                    DepartmentId = 3, // Foreign Key value (e.g., Physics)
                     Username = "maria.dcruz",
                     Role = "Teacher",
-                    InternalTeacherId = id // Store the internal ID for postbacks
+                    ProfilePictureUrl = null
                 },
-                // Example 2
                 502 => new TeacherProfileViewModel
                 {
-                    FullName = "Reyes, Jose",
+                    FirstName = "Jose",
+                    LastName = "Reyes",
                     DateOfBirth = new DateTime(1990, 5, 15),
-                    Gender = "Male",
                     ContactNumber = "09987654321",
-                    EmailAddress = "jose@school.edu",
+                    Email = "jose@school.edu",
                     Address = "Cebu City, Cebu",
                     TeacherId = "T-24-001",
-                    Position = "Instructor I",
-                    Department = "Mathematics",
+                    DepartmentId = 1, // Foreign Key value (e.g., Mathematics)
                     Username = "jose.reyes",
                     Role = "Teacher",
-                    InternalTeacherId = id
+                    ProfilePictureUrl = null
                 },
-                // Default: Fallback if ID is unknown
-                _ => new TeacherProfileViewModel { FullName = "Unknown Teacher", InternalTeacherId = id }
+                _ => new TeacherProfileViewModel { TeacherId = "INVALID" }
             };
 
-            // If the mock data load fails or is incomplete, you might redirect
-            if (string.IsNullOrEmpty(Teacher.FullName))
+            // If the mock data load fails or is incomplete, redirect
+            if (string.IsNullOrEmpty(Teacher.FirstName))
             {
-                // Redirect back to the list if ID is invalid
-                return RedirectToPage("./ManageTeacher");
+                TempData["Message"] = "Teacher not found.";
+                TempData["MessageType"] = "danger";
+                return RedirectToPage("./Manage");
             }
 
             return Page();
         }
 
         // Handles the form submission when the "Update Profile" button is clicked
-        public IActionResult OnPostUpdate()
+        public async Task<IActionResult> OnPostUpdate()
         {
-            // Check if the required fields meet the validation rules (from the ViewModel)
+            // Reload departments and check model state
+            LoadDepartments();
+            
+            // NOTE: The IFormFile property (PhotoUpload) will be checked here for a file.
+
             if (!ModelState.IsValid)
             {
-                // If validation fails, stay on the page and display errors in Edit Mode
                 TempData["Message"] = "Error updating profile. Please check the fields.";
                 TempData["MessageType"] = "danger";
-                return Page(); // Page() re-renders the current page with validation errors
+                return Page(); 
             }
 
-            // In a real app: Save Teacher.FullName, Teacher.DateOfBirth, etc., to the database.
+            // In a real app: Save changes via a Service.
 
-            // Set success message
             TempData["Message"] = "Profile updated successfully!";
             TempData["MessageType"] = "success";
 
-            // Redirect to the same page (PRG pattern: Post-Redirect-Get) to clear the form state
-            return RedirectToPage("./TeacherProfile", new { id = Teacher.InternalTeacherId });
+            // Redirect to the same page (PRG pattern: Post-Redirect-Get)
+            return RedirectToPage("./Profile", new { id = TeacherRouteId });
         }
 
         // Handles the form submission when the "Discard Changes" button is clicked
         public IActionResult OnPostDiscard()
         {
-            // Simply redirect to reload the page and revert any local changes
             TempData["Message"] = "Changes discarded.";
             TempData["MessageType"] = "info";
-            return RedirectToPage("./TeacherProfile", new { id = Teacher.InternalTeacherId });
+            return RedirectToPage("./Profile", new { id = TeacherRouteId });
+        }
+        
+        // Helper method to load static department data
+        private void LoadDepartments()
+        {
+            var staticDepartments = new List<StaticDepartmentModel>
+            {
+                new StaticDepartmentModel { Id = 1, Name = "Mathematics" },
+                new StaticDepartmentModel { Id = 2, Name = "Computer Engineering" },
+                new StaticDepartmentModel { Id = 3, Name = "Physics" },
+            };
+
+            Departments = staticDepartments.Select(d => new SelectListItem 
+            {
+                Value = d.Id.ToString(), 
+                Text = d.Name            
+            }).ToList();
         }
     }
 
-    // --- ViewModel for the Teacher Profile Data ---
+    // --- ViewModel for the Teacher Profile Data (Database Aligned) ---
     public class TeacherProfileViewModel
     {
-        // Hidden field to store the internal database ID for postbacks
-        [BindProperty]
-        public int InternalTeacherId { get; set; }
+        // Name is split for DB
+        [Required(ErrorMessage = "First Name is required.")]
+        [Display(Name = "First Name")]
+        public string FirstName { get; set; } = string.Empty;
 
-        // Basic Information
-        [Required(ErrorMessage = "Full Name is required.")]
-        public string FullName { get; set; }
+        [Required(ErrorMessage = "Last Name is required.")]
+        [Display(Name = "Last Name")]
+        public string LastName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Date of Birth is required.")]
         [DataType(DataType.Date)]
         public DateTime DateOfBirth { get; set; }
 
-        public string Gender { get; set; }
-
         [Required(ErrorMessage = "Contact Number is required.")]
         [Phone]
-        public string ContactNumber { get; set; }
+        public string ContactNumber { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Email Address is required.")]
-        [EmailAddress(ErrorMessage = "Invalid Email format.")]
-        public string EmailAddress { get; set; }
+        [EmailAddress]
+        [Display(Name = "Email Address")]
+        public string Email { get; set; } = string.Empty; // Aligned with DB 'email'
 
-        public string Address { get; set; }
+        public string Address { get; set; } = string.Empty;
 
         // Teacher Details
         [Required]
-        public string TeacherId { get; set; } // The ID number shown to the user (e.g., T-22-010)
+        [Display(Name = "Teacher ID")]
+        public string TeacherId { get; set; } = string.Empty;
 
-        public string Position { get; set; }
-        public string Department { get; set; }
+        // Foreign Key
+        [Required(ErrorMessage = "Department is required.")]
+        public long DepartmentId { get; set; } 
 
         // Account Information
         [Required(ErrorMessage = "Username is required.")]
-        public string Username { get; set; }
+        public string Username { get; set; } = string.Empty;
+        
+        public string Role { get; set; } = string.Empty; // Read-only
 
-        // This is typically read-only or managed by the system
-        public string Role { get; set; }
+        public string ProfilePictureUrl { get; set; } = string.Empty;
+        
+        // For file upload
+        public IFormFile PhotoUpload { get; set; } = default!;
+        
+        // Fields for password change logic (must be added to HTML form if needed)
+        // public string NewPassword { get; set; }
+        // public string ConfirmNewPassword { get; set; }
     }
+    
+   
 }

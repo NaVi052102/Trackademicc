@@ -6,7 +6,7 @@ using System;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
-namespace Trackademic.Pages.Admin.Students
+namespace Trackademic.WebApp.Pages.Admin.Students
 {
     public class ManageModel : PageModel
     {
@@ -25,79 +25,82 @@ namespace Trackademic.Pages.Admin.Students
 
         // Select List options
         public SelectList SchoolYears { get; } = new SelectList(new[] { "2024-2025", "2023-2024", "2022-2023" });
-        public SelectList Semesters { get; } = new SelectList(new[] { "Fall", "Spring", "Summer" });
+        public SelectList Semesters { get; } = new SelectList(new[] { "First", "Second", "Summer" });
         public SelectList SortOptions { get; } = new SelectList(new[]
         {
             new { Value = "name", Text = "Full Name" },
             new { Value = "id", Text = "ID Number" },
-            new { Value = "performance", Text = "Performance" },
+            // Removed performance from sort options
             new { Value = "date", Text = "Enrollment Date" }
         }, "Value", "Text");
 
         // --- Data Model ---
-        public IList<StudentPerformanceViewModel> StudentList { get; set; }
+        public IList<StudentAdminViewModel> StudentList { get; set; }
 
-        public class StudentPerformanceViewModel
+        public class StudentAdminViewModel
         {
             public int StudentID { get; set; }
-            public string IDNumber { get; set; } // New field for ID number
+            public string IDNumber { get; set; }
             public string FullName { get; set; }
-            public string Email { get; set; }
+            
+            // NEW FIELDS for admin view
+            public string Department { get; set; }
+            public string ContactInfo { get; set; } // Email and Contact Number combined/simplified
+            
             public System.DateTime EnrollmentDate { get; set; }
-            public double OverallPerformance { get; set; }
+            // REMOVED: OverallPerformance
         }
 
         public async Task OnGetAsync()
         {
             // --- Mock Data Setup ---
-            var mockData = new List<StudentPerformanceViewModel>
+            var mockData = new List<StudentAdminViewModel>
             {
-                new StudentPerformanceViewModel
+                new StudentAdminViewModel
                 {
                     StudentID = 101,
-                    IDNumber = "S-24-001", // Example ID
+                    IDNumber = "S-24-001",
                     FullName = "Smith, Alice",
-                    Email = "alice@school.edu",
+                    Department = "Computer Engineering", // NEW
+                    ContactInfo = "alice@mail.com / 555-1234", // NEW
                     EnrollmentDate = new DateTime(2023, 09, 01),
-                    OverallPerformance = 92.5
                 },
-                new StudentPerformanceViewModel
+                new StudentAdminViewModel
                 {
                     StudentID = 102,
                     IDNumber = "S-24-002",
                     FullName = "Johnson, Ben",
-                    Email = "ben@school.edu",
+                    Department = "Electrical Engineering", // NEW
+                    ContactInfo = "ben@mail.com / 555-5678", // NEW
                     EnrollmentDate = new DateTime(2023, 09, 01),
-                    OverallPerformance = 78.1
                 },
-                new StudentPerformanceViewModel
+                new StudentAdminViewModel
                 {
                     StudentID = 103,
                     IDNumber = "S-24-003",
                     FullName = "Garcia, Clara",
-                    Email = "clara@school.edu",
+                    Department = "Civil Engineering", // NEW
+                    ContactInfo = "clara@mail.com / 555-9012", // NEW
                     EnrollmentDate = new DateTime(2024, 01, 15),
-                    OverallPerformance = 65.0
                 }
             };
 
             // --- Apply Filtering (Mock Logic) ---
-            IEnumerable<StudentPerformanceViewModel> filteredList = mockData;
+            IEnumerable<StudentAdminViewModel> filteredList = mockData;
 
             if (!string.IsNullOrEmpty(SearchTerm))
             {
                 filteredList = filteredList.Where(s =>
                     s.FullName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    s.IDNumber.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
+                    s.IDNumber.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    s.Department.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
                 );
             }
-            // Note: Since this is mock data, we skip filtering by SchoolYear/Semester
 
             // --- Apply Sorting ---
             filteredList = SortBy switch
             {
                 "id" => filteredList.OrderBy(s => s.IDNumber),
-                "performance" => filteredList.OrderByDescending(s => s.OverallPerformance),
                 "date" => filteredList.OrderByDescending(s => s.EnrollmentDate),
                 _ => filteredList.OrderBy(s => s.FullName),
             };

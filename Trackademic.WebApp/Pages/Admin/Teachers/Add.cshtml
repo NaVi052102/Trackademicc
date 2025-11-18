@@ -1,5 +1,5 @@
 @page
-@model Trackademic.Pages.Admin.Teachers.AddModel
+@model Trackademic.WebApp.Pages.Admin.Teachers.AddModel
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Teacher Registration";
@@ -23,7 +23,6 @@
 
     /* --- UPDATED BUTTON CLASS --- */
     .btn-create-teacher {
-        /* This makes the button gray */
         background-color: #6c757d;
         border-color: #6c757d;
         color: #ffffff;
@@ -33,23 +32,19 @@
     }
 
         .btn-create-teacher:hover {
-            /* This is the new, lighter green on hover */
             background-color: #28a745;
             border-color: #28a745;
             color: #ffffff;
         }
 
     .btn-upload-photo {
-        /* This makes the button gray */
         background-color: #6c757d;
         border-color: #6c757d;
         color: #ffffff;
-        /* This adds the rounded corners */
         border-radius: 15px;
     }
 
         .btn-upload-photo:hover {
-            /* This makes the button green on hover */
             background-color: #28a745;
             border-color: #28a745;
             color: #ffffff;
@@ -70,8 +65,17 @@
             <h2>Teacher Registration</h2>
             <p class="text-muted">Please provide your teacher credentials and account details.</p>
         </div>
+        
+        @if (TempData["Message"] != null)
+        {
+            <div class="alert alert-@TempData["MessageType"] alert-dismissible fade show" role="alert">
+                @TempData["Message"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
 
-        <form method="post">
+        @* IMPORTANT: Added enctype for file upload *@
+        <form method="post" enctype="multipart/form-data"> 
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
             <div class="card shadow-sm mb-4">
@@ -88,47 +92,47 @@
                             <span>(Profile)</span>
                         </div>
                         <label for="photoUpload" class="btn btn-sm btn-upload-photo">Upload Photo</label>
-                        <input type="file" id="photoUpload" class="d-none">
+                        @* Binding file input to PhotoUpload IFormFile property *@
+                        <input type="file" id="photoUpload" asp-for="TeacherInput.PhotoUpload" class="d-none">
+                    </div>
+
+                    <div class="row">
+                        @* SPLIT NAME FIELD *@
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="TeacherInput.FirstName" class="form-label"></label>
+                            <input asp-for="TeacherInput.FirstName" class="form-control" />
+                            <span asp-validation-for="TeacherInput.FirstName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="TeacherInput.LastName" class="form-label"></label>
+                            <input asp-for="TeacherInput.LastName" class="form-control" />
+                            <span asp-validation-for="TeacherInput.LastName" class="text-danger"></span>
+                        </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label asp-for="Teacher.FullName" class="form-label">Full Name</label>
-                            <input asp-for="Teacher.FullName" class="form-control" />
-                            <span asp-validation-for="Teacher.FullName" class="text-danger"></span>
+                            <label asp-for="TeacherInput.DateOfBirth" class="form-label"></label>
+                            <input type="date" asp-for="TeacherInput.DateOfBirth" class="form-control" />
+                            <span asp-validation-for="TeacherInput.DateOfBirth" class="text-danger"></span>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label asp-for="Teacher.DateOfBirth" class="form-label">Date of Birth</label>
-                            <input asp-for="Teacher.DateOfBirth" class="form-control" />
-                            <span asp-validation-for="Teacher.DateOfBirth" class="text-danger"></span>
+                            <label asp-for="TeacherInput.ContactNumber" class="form-label"></label>
+                            <input type="tel" asp-for="TeacherInput.ContactNumber" class="form-control" />
+                            <span asp-validation-for="TeacherInput.ContactNumber" class="text-danger"></span>
                         </div>
                     </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="Teacher.Gender" class="form-label">Gender</label>
-                            <select asp-for="Teacher.Gender" class="form-control">
-                                <option value="">-- Select Gender --</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="Teacher.ContactNumber" class="form-label">Contact Number</label>
-                            <input asp-for="Teacher.ContactNumber" class="form-control" />
-                            <span asp-validation-for="Teacher.ContactNumber" class="text-danger"></span>
-                        </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="TeacherInput.Email" class="form-label"></label>
+                        <input type="email" asp-for="TeacherInput.Email" class="form-control" />
+                        <span asp-validation-for="TeacherInput.Email" class="text-danger"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Teacher.EmailAddress" class="form-label">Email Address</label>
-                        <input asp-for="Teacher.EmailAddress" class="form-control" />
-                        <span asp-validation-for="Teacher.EmailAddress" class="text-danger"></span>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="Teacher.Address" class="form-label">Address</label>
-                        <textarea asp-for="Teacher.Address" class="form-control" rows="3"></textarea>
+                        <label asp-for="TeacherInput.Address" class="form-label"></label>
+                        <textarea asp-for="TeacherInput.Address" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="TeacherInput.Address" class="text-danger"></span>
                     </div>
                 </div>
             </div>
@@ -143,19 +147,19 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label asp-for="Teacher.TeacherId" class="form-label">Teacher ID</label>
-                            <input asp-for="Teacher.TeacherId" class="form-control" />
-                            <span asp-validation-for="Teacher.TeacherId" class="text-danger"></span>
+                            <label asp-for="TeacherInput.TeacherId" class="form-label"></label>
+                            <input asp-for="TeacherInput.TeacherId" class="form-control" />
+                            <span asp-validation-for="TeacherInput.TeacherId" class="text-danger"></span>
                         </div>
+                        
                         <div class="col-md-6 mb-3">
-                            <label asp-for="Teacher.Position" class="form-label">Position</label>
-                            <input asp-for="Teacher.Position" class="form-control" placeholder="e.g., Instructor, Professor" />
+                            <label asp-for="TeacherInput.DepartmentId" class="form-label">Department</label>
+                            @* Dropdown bound to DepartmentId (Foreign Key) *@
+                            <select asp-for="TeacherInput.DepartmentId" asp-items="Model.Departments" class="form-control">
+                                <option value="">-- Select Department --</option>
+                            </select>
+                            <span asp-validation-for="TeacherInput.DepartmentId" class="text-danger"></span>
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="Teacher.Department" class="form-label">Department</label>
-                        <input asp-for="Teacher.Department" class="form-control" placeholder="e.g., Computer Engineering" />
                     </div>
                 </div>
             </div>
@@ -168,28 +172,30 @@
                     </h5>
                 </div>
                 <div class="card-body">
+                    <input type="hidden" asp-for="TeacherInput.UserType" />
+                    
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label asp-for="Teacher.Username" class="form-label">Username</label>
-                            <input asp-for="Teacher.Username" class="form-control" />
-                            <span asp-validation-for="Teacher.Username" class="text-danger"></span>
+                            <label asp-for="TeacherInput.Username" class="form-label"></label>
+                            <input asp-for="TeacherInput.Username" class="form-control" />
+                            <span asp-validation-for="TeacherInput.Username" class="text-danger"></span>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label asp-for="Teacher.Role" class="form-label">Role</label>
-                            <input asp-for="Teacher.Role" class="form-control" value="Teacher" readonly />
+                            <label for="RoleDisplay" class="form-label">Role</label>
+                            <input id="RoleDisplay" class="form-control" value="Teacher" readonly />
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label asp-for="Teacher.Password" class="form-label">Password</label>
-                            <input asp-for="Teacher.Password" class="form-control" />
-                            <span asp-validation-for="Teacher.Password" class="text-danger"></span>
+                            <label asp-for="TeacherInput.Password" class="form-label"></label>
+                            <input asp-for="TeacherInput.Password" class="form-control" />
+                            <span asp-validation-for="TeacherInput.Password" class="text-danger"></span>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label asp-for="Teacher.ConfirmPassword" class="form-label">Confirm Password</label>
-                            <input asp-for="Teacher.ConfirmPassword" class="form-control" />
-                            <span asp-validation-for="Teacher.ConfirmPassword" class="text-danger"></span>
+                            <label asp-for="TeacherInput.ConfirmPassword" class="form-label"></label>
+                            <input asp-for="TeacherInput.ConfirmPassword" class="form-control" />
+                            <span asp-validation-for="TeacherInput.ConfirmPassword" class="text-danger"></span>
                         </div>
                     </div>
                 </div>

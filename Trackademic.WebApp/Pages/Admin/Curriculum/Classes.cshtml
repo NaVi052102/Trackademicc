@@ -1,0 +1,377 @@
+@page
+@model Trackademic.WebApp.Pages.Admin.Curriculum.ClassModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Class Management (Admin)";
+}
+
+<style>
+    /* --- Exact Styles from Teacher View --- */
+    .classes-container {
+        padding: 1.5rem;
+    }
+    
+    .class-selector-bar {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .select-label {
+        font-weight: 600;
+        margin-right: 0.5rem;
+        white-space: nowrap;
+        min-width: 60px;
+        color: #495057;
+    }
+
+    /* Admin Primary Button Color */
+    .btn-set-filters {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #ffffff;
+    }
+    .btn-set-filters:hover {
+        background-color: #5a6268;
+        border-color: #545b62;
+    }
+
+    .info-card {
+        border-radius: 8px;
+        transition: transform 0.2s;
+    }
+
+    .info-icon {
+        font-size: 2rem;
+        opacity: 0.8;
+    }
+
+    /* --- Table Design Matching Teacher View --- */
+    .roster-table th {
+        background-color: #343a40; 
+        color: white;
+        vertical-align: middle;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        text-align: center;
+        padding: 12px;
+    }
+    
+    .roster-table td {
+        vertical-align: middle;
+        padding: 10px;
+        text-align: center; 
+    }
+
+    .roster-table td:nth-child(3) {
+        text-align: left;
+    }
+</style>
+
+<div class="classes-container">
+    
+    <div class="class-selector-bar">
+        @* Top Row: Academic Period & Dept *@
+        <form method="get" class="d-flex flex-wrap align-items-center gap-4 border-bottom pb-3">
+            <div class="filter-group">
+                <label for="SelectedYearId" class="select-label">Year:</label>
+                <select asp-for="SelectedYearId" asp-items="Model.YearOptions" class="form-select" style="width: 120px;">
+                    <option value="">-- Select Year --</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="SelectedSemesterId" class="select-label">Sem:</label>
+                <select asp-for="SelectedSemesterId" asp-items="Model.SemesterOptions" class="form-select" style="width: 130px;">
+                    <option value="">-- Select Sem --</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="SelectedDepartmentId" class="select-label">Dept:</label>
+                <select asp-for="SelectedDepartmentId" asp-items="Model.DepartmentOptions" class="form-select" style="width: 180px;">
+                    <option value="">-- Select Dept --</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-sm btn-set-filters">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Context
+            </button>
+        </form>
+
+        @* Bottom Row: Subject & Class Selection *@
+        <form method="get" class="d-flex flex-wrap align-items-center gap-4 pt-2">
+            <input type="hidden" asp-for="SelectedYearId" />
+            <input type="hidden" asp-for="SelectedSemesterId" />
+            <input type="hidden" asp-for="SelectedDepartmentId" />
+
+            <div class="filter-group flex-grow-1">
+                <label for="SelectedSubjectId" class="select-label">Subject:</label>
+                <select asp-for="SelectedSubjectId" asp-items="Model.SubjectOptions" class="form-select w-100" onchange="this.form.submit()">
+                    <option value="">-- Select Subject --</option>
+                </select>
+            </div>
+
+            <div class="filter-group flex-grow-1">
+                <label for="SelectedClassId" class="select-label">Class:</label>
+                <select asp-for="SelectedClassId" asp-items="Model.ClassOptions" class="form-select w-100" onchange="this.form.submit()">
+                    <option value="">-- Select Class Section --</option>
+                </select>
+            </div>
+        </form>
+    </div>
+
+    @if (Model.SelectedClassDetails != null)
+    {
+        @if (TempData["Message"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["Message"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <div class="alert alert-success d-flex align-items-center mb-4 shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2 fs-4"></i>
+            <div>
+                Viewing details for: <strong>@Model.SelectedClassDetails.CourseTitle (@Model.SelectedClassDetails.SectionName)</strong>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="card info-card text-bg-primary shadow-sm">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-0">Total Students</h5>
+                            <p class="display-5 fw-bold mb-0">@Model.SelectedClassDetails.TotalStudents</p>
+                        </div>
+                        <i class="bi bi-people info-icon"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="card info-card text-bg-light border shadow-sm">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-2 text-dark">Assigned Teacher</h5>
+                            <p class="mb-0 fs-5 text-primary fw-bold">
+                                <i class="bi bi-person-badge me-2"></i> @Model.SelectedClassDetails.AssignedTeacher
+                            </p>
+                        </div>
+                        <i class="bi bi-calendar3-week info-icon text-secondary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (!Model.IsEnrollmentMode)
+        {
+            @* ======= ROSTER VIEW ======= *@
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0 text-primary"><i class="bi bi-list-task me-2"></i> Student Roster</h5>
+                    
+                    <form method="post" asp-page-handler="EnrollMode" class="d-inline">
+                        <input type="hidden" asp-for="SelectedYearId" />
+                        <input type="hidden" asp-for="SelectedSemesterId" />
+                        <input type="hidden" asp-for="SelectedDepartmentId" />
+                        <input type="hidden" asp-for="SelectedSubjectId" />
+                        <input type="hidden" asp-for="SelectedClassId" />
+                        
+                        <button type="submit" class="btn btn-sm btn-success rounded-pill px-3">
+                            <i class="bi bi-person-plus-fill me-1"></i> Enroll Student
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="p-3 border-bottom bg-light">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text" id="rosterSearch" class="form-control border-start-0" placeholder="Filter students by ID or Name...">
+                    </div>
+                </div>
+                
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover roster-table mb-0" id="studentRosterTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">#</th>
+                                    <th style="width: 150px;">Student ID</th>
+                                    <th class="text-start">Full Name</th>
+                                    <th style="width: 100px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Students.Any())
+                                {
+                                    @for (int i = 0; i < Model.Students.Count; i++)
+                                    {
+                                        var student = Model.Students[i];
+                                        <tr>
+                                            <td class="text-center text-muted">@(i + 1)</td>
+                                            <td class="text-center fw-bold text-dark">@student.StudentId</td>
+                                            <td class="text-start fw-bold text-primary">@student.FullName</td>
+                                            <td class="text-center">
+                                                <form method="post" asp-page-handler="RemoveStudent" onsubmit="return confirm('Remove @student.FullName from this class?');">
+                                                    <input type="hidden" name="studentId" value="@student.StudentId" />
+                                                    <input type="hidden" asp-for="SelectedYearId" />
+                                                    <input type="hidden" asp-for="SelectedSemesterId" />
+                                                    <input type="hidden" asp-for="SelectedDepartmentId" />
+                                                    <input type="hidden" asp-for="SelectedSubjectId" />
+                                                    <input type="hidden" asp-for="SelectedClassId" />
+                                                    
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm border-0" title="Remove from Class">
+                                                        <i class="bi bi-person-x-fill"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-5">
+                                            No students currently enrolled in this section.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            @* ======= ENROLLMENT SEARCH VIEW ======= *@
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0 text-success"><i class="bi bi-search me-2"></i> Find Student to Enroll in @Model.SelectedClassDetails.SectionName</h5>
+                    
+                    <a asp-page="./ClassModel" 
+                       asp-route-SelectedYearId="@Model.SelectedYearId" 
+                       asp-route-SelectedSemesterId="@Model.SelectedSemesterId"
+                       asp-route-SelectedDepartmentId="@Model.SelectedDepartmentId"
+                       asp-route-SelectedSubjectId="@Model.SelectedSubjectId"
+                       asp-route-SelectedClassId="@Model.SelectedClassId"
+                       class="btn btn-sm btn-secondary rounded-pill px-3">
+                        <i class="bi bi-x-lg me-1"></i> Cancel
+                    </a>
+                </div>
+                
+                <form method="post" asp-page-handler="SearchStudent" class="card-body bg-light">
+                    <input type="hidden" asp-for="SelectedYearId" />
+                    <input type="hidden" asp-for="SelectedSemesterId" />
+                    <input type="hidden" asp-for="SelectedDepartmentId" />
+                    <input type="hidden" asp-for="SelectedSubjectId" />
+                    <input type="hidden" asp-for="SelectedClassId" />
+                    
+                    <div class="row g-3 align-items-center justify-content-center py-4">
+                        <div class="col-md-6">
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text"><i class="bi bi-person-circle"></i></span>
+                                <input type="text" asp-for="StudentSearchTerm" class="form-control" placeholder="Enter Student ID or Full Name">
+                                <button type="submit" class="btn btn-primary px-4">Search</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                @if (Model.EnrollmentSearchResults.Any())
+                {
+                    <div class="card-body p-0 border-top">
+                        <h6 class="p-3 mb-0 bg-light text-muted text-uppercase small fw-bold">Search Results</h6>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center">Student ID</th>
+                                        <th class="text-start">Full Name</th>
+                                        <th class="text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var student in Model.EnrollmentSearchResults)
+                                    {
+                                        <tr>
+                                            <td class="text-center fw-bold">@student.StudentId</td>
+                                            <td class="text-start">@student.FullName</td>
+                                            <td class="text-center">
+                                                <form method="post" asp-page-handler="EnrollStudent" class="d-inline">
+                                                    <input type="hidden" asp-for="SelectedYearId" />
+                                                    <input type="hidden" asp-for="SelectedSemesterId" />
+                                                    <input type="hidden" asp-for="SelectedDepartmentId" />
+                                                    <input type="hidden" asp-for="SelectedSubjectId" />
+                                                    <input type="hidden" asp-for="SelectedClassId" />
+                                                    <input type="hidden" name="studentIdToEnroll" value="@student.StudentId" />
+                                                    <button type="submit" class="btn btn-sm btn-success fw-bold px-3">
+                                                        <i class="bi bi-plus-lg me-1"></i> Enroll
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+                else if (Model.StudentSearchTerm != null)
+                {
+                    <div class="card-footer bg-white text-center py-4">
+                        <p class="text-danger mb-0">No students matched your search term.</p>
+                    </div>
+                }
+            </div>
+        }
+
+    }
+    else
+    {
+        <div class="alert alert-info text-center mt-5 p-5 shadow-sm">
+            <i class="bi bi-hand-index-thumb fs-1 mb-3 d-block text-primary"></i>
+            <h4 class="alert-heading">Ready to Manage</h4>
+            <p class="mb-0">Please use the filters above to select a <strong>Department</strong>, <strong>Subject</strong>, and <strong>Class Section</strong>.</p>
+        </div>
+    }
+
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const $searchInput = $('#rosterSearch');
+            const $tableBody = $('#studentRosterTable tbody');
+
+            $searchInput.on('keyup', function() {
+                const searchTerm = $(this).val().toLowerCase();
+                $tableBody.find('tr').each(function() {
+                    const $row = $(this);
+                    if ($row.find('td[colspan="4"]').length) return;
+
+                    const studentId = $row.find('td:eq(1)').text().toLowerCase();
+                    const fullName = $row.find('td:eq(2)').text().toLowerCase();
+
+                    if (studentId.includes(searchTerm) || fullName.includes(searchTerm)) {
+                        $row.show();
+                    } else {
+                        $row.hide();
+                    }
+                });
+            });
+        });
+    </script>
+}
