@@ -36,7 +36,17 @@ namespace Trackademic.Services.Implementations
             if (user.PasswordHash == password)
             {
                 // Password is correct
-                return user;
+                // Map Data.Models.User to Core.Models.User
+                return new Trackademic.Core.Models.User
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    PasswordHash = user.PasswordHash,
+                    UserType = user.UserType,
+                    Admin = null,    // Map as needed
+                    Student = null,  // Map as needed
+                    Teacher = null   // Map as needed
+                };
             }
 
             // Password was wrong

@@ -69,13 +69,13 @@ namespace Trackademic.WebApp.Pages.Account
                 if (loginRole.Equals("Teacher", StringComparison.OrdinalIgnoreCase))
                 {
                     var teacher = await _context.Teachers
-                        .Include(t => t.User)
+                        .Include(t => t.IdNavigation)
                         .FirstOrDefaultAsync(t => t.TeacherId == Input.SchoolID);
 
-                    if (teacher != null && teacher.User != null)
+                    if (teacher != null && teacher.IdNavigation != null)
                     {
-                        userId = teacher.User.Id;
-                        storedPasswordHash = teacher.User.PasswordHash;
+                        userId = teacher.IdNavigation.Id;
+                        storedPasswordHash = teacher.IdNavigation.PasswordHash;
                         fullName = $"{teacher.FirstName} {teacher.LastName}";
                         userRole = "Teacher";
                     }
@@ -83,13 +83,13 @@ namespace Trackademic.WebApp.Pages.Account
                 else // Student
                 {
                     var student = await _context.Students
-                        .Include(s => s.User)
+                        .Include(s => s.IdNavigation)
                         .FirstOrDefaultAsync(s => s.StudentNumber == Input.SchoolID);
 
-                    if (student != null && student.User != null)
+                    if (student != null && student.IdNavigation != null)
                     {
-                        userId = student.User.Id;
-                        storedPasswordHash = student.User.PasswordHash;
+                        userId = student.IdNavigation.Id;
+                        storedPasswordHash = student.IdNavigation.PasswordHash;
                         fullName = $"{student.FirstName} {student.LastName}";
                         userRole = "Student";
                     }
@@ -149,7 +149,7 @@ namespace Trackademic.WebApp.Pages.Account
 
                 _logger.LogInformation($"User {Input.SchoolID} logged in as {userRole}.");
 
-                if (userRole == "Teacher") return RedirectToPage("/Teacher/Dashboard");
+                if (userRole == "Teacher") return RedirectToPage("/Teachers/Dashboard");
                 else if (userRole == "Admin") return RedirectToPage("/Admin/Dashboard");
                 else return RedirectToPage("/Student/StudentDashboard");
             }

@@ -17,9 +17,19 @@ namespace Trackademic.Data.Repositories
         }
 
         // This is the implementation of the method from IUserRepository
-        public async Task<IEnumerable<User>> GetUsers()
+        public async Task<IEnumerable<Trackademic.Core.Models.User>> GetUsers()
         {
-            return await _context.Users.ToListAsync();
+            // Use .Select() to convert Data.Models.User -> Core.Models.User
+            return await _context.Users
+                .Select(u => new Trackademic.Core.Models.User
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    PasswordHash = u.PasswordHash,
+                    UserType = u.UserType
+                    // Add any other properties here that exist in both classes
+                })
+                .ToListAsync();
         }
 
         // Add other required methods here...

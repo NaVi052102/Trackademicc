@@ -1,5 +1,5 @@
 ﻿using BCrypt.Net;
-using Trackademic.Core.Models;
+using Trackademic.Data.Models;
 using Trackademic.Data.Data;
 
 namespace Trackademic.WebApp.Data
