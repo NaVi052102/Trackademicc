@@ -43,7 +43,6 @@ namespace Trackademic.Pages.Student
         public int PassedSubjects { get; set; } = 0;
         public int TotalSubjects { get; set; } = 0;
 
-        public List<string> PerformanceAlerts { get; set; } = new();
         public Dictionary<string, decimal> GpaHistory { get; set; } = new();
         public List<ClassEnrollmentDisplay> EnrolledClasses { get; set; } = new();
 
@@ -57,7 +56,6 @@ namespace Trackademic.Pages.Student
             LoadCurrentTermClasses();
             LoadGpaHistory();
             CalculateCumulativeStatistics();
-            GeneratePerformanceAlerts();
             GenerateCurrentPerformanceData();
         }
 
@@ -117,29 +115,6 @@ namespace Trackademic.Pages.Student
                 { "2023-2024 - 2nd Semester", 4.05m },
                 { "2024-2025 - 1st Semester", 4.12m }
             };
-        }
-
-        private void GeneratePerformanceAlerts()
-        {
-            // MOCK Alert Generation logic
-            var historicalGrades = new List<(string code, string status)>
-            {
-                ("CPE335", "FAILED"),
-                ("CPE101", "INC"),
-                ("MAT201", "FAILED"),
-            };
-
-            foreach (var grade in historicalGrades)
-            {
-                if (grade.status == "FAILED")
-                {
-                    PerformanceAlerts.Add($"<i class='bi bi-x-octagon-fill text-danger me-1'></i> **FAILED:** Subject {grade.code} (Action required).");
-                }
-                else if (grade.status == "INC")
-                {
-                    PerformanceAlerts.Add($"<i class='bi bi-exclamation-triangle-fill text-warning me-1'></i> **INCOMPLETE:** Subject {grade.code} (Submit pending requirements).");
-                }
-            }
         }
     }
 }

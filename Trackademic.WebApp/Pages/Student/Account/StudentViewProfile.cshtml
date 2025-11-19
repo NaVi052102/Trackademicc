@@ -1,112 +1,273 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Collections.Generic;
-using System.Linq;
-using System;
-using Trackademic.Core.Interfaces; // Assuming this namespace exists
-using Trackademic.Core.Models;     // Assuming this namespace exists
+﻿@page
+@model Trackademic.WebApp.Pages.Student.Account.StudentProfileModel
+@{
+    ViewData["Title"] = "Student Profile";
+}
 
-namespace Trackademic.Pages.Student
-{
-    // Class definition for the Enrolled Classes list
-    public class ClassEnrollmentDisplay
-    {
-        public string SubjectCode { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string FacultyName { get; set; } = string.Empty;
-        public int Units { get; set; } = 0;
-        public string ImageUrl { get; set; } = "/images/logo.png";
-    }
-
-    public class StudentDashboardModel : PageModel
-    {
-        private readonly IGradeService _gradeService;
-
-        public StudentDashboardModel(IGradeService gradeService)
-        {
-            _gradeService = gradeService;
+@section Styles {
+    <link rel="stylesheet" href="~/css/student-registration.css" asp-append-version="true" />
+    <style>
+        /* CSS to style the edit/update buttons */
+        .btn-update-profile {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            color: #ffffff;
+            border-radius: 150px;
+            height: 50px;
+            width: 200px;
         }
 
-        // --- PROPERTIES REQUIRED BY THE RAZOR VIEW (Initialized) ---
-
-        public decimal CumulativeGPA { get; set; } = 0.0m;
-        public int TotalUnitsEarned { get; set; } = 0;
-        public int PassedSubjects { get; set; } = 0;
-        public int TotalSubjects { get; set; } = 0;
-
-        public List<string>
-    PerformanceAlerts { get; set; } = new();
-    public Dictionary<string, decimal>
-        GpaHistory { get; set; } = new();
-        public List<ClassEnrollmentDisplay>
-            EnrolledClasses { get; set; } = new();
-
-            // --- PAGE HANDLER AND LOGIC ---
-
-            public void OnGet()
-            {
-            LoadCurrentTermClasses();
-            LoadGpaHistory();
-            CalculateCumulativeStatistics();
-            GeneratePerformanceAlerts();
+            .btn-update-profile:hover {
+                background-color: #28a745;
+                border-color: #28a745;
+                color: #ffffff;
             }
 
-            private void LoadCurrentTermClasses()
-            {
-            // MOCK DATA for Enrolled Classes
-            EnrolledClasses = new List<ClassEnrollmentDisplay>
-                {
-                new ClassEnrollmentDisplay { SubjectCode = "CPE331", Description = "Data and Digital Communications", FacultyName = "SEMBLANTE, J. N.", Units = 3 },
-                new ClassEnrollmentDisplay { SubjectCode = "CPE361", Description = "Logic Circuits and Design", FacultyName = "CORTES, S. G.", Units = 4 },
-                new ClassEnrollmentDisplay { SubjectCode = "ES038", Description = "Technopreneurship", FacultyName = "BARRIOQUINTO, E. M.", Units = 3 },
-                new ClassEnrollmentDisplay { SubjectCode = "CPE333", Description = "Basic Safety and Health", FacultyName = "ALFEREZ, N.", Units = 3 },
-                new ClassEnrollmentDisplay { SubjectCode = "CPE335", Description = "Feedback and Control Systems", FacultyName = "TAMPUS, M. J.", Units = 3 },
-                };
-                }
+        .btn-discard-changes {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            color: #ffffff;
+            border-radius: 150px;
+            height: 50px;
+            width: 200px;
+        }
 
-                private void CalculateCumulativeStatistics()
-                {
-                // MOCK Cumulative Data
-                CumulativeGPA = 4.12m;
-                TotalUnitsEarned = 78;
-                PassedSubjects = 18;
-                TotalSubjects = 20;
-                }
+            .btn-discard-changes:hover {
+                background-color: #dc3545;
+                border-color: #dc3545;
+            }
+    </style>
+}
 
+<div class="row mt-4">
 
-                private void LoadGpaHistory()
-                {
-                // MOCK GPA HISTORY
-                GpaHistory = new Dictionary<string, decimal>
-                    {
-                    { "Spr '23", 3.75m },
-                    { "Fall '23", 3.90m },
-                    { "Spr '24", 4.05m },
-                    { "Fall '24", 4.12m }
-                    };
+    <div class="col-12">
+
+        <div class="mb-4 d-flex justify-content-between align-items-center">
+            <h2>Student Profile</h2>
+            <p class="text-muted mb-0">View and manage your student credentials and account details.</p>
+        </div>
+
+        @if (TempData["Message"] != null)
+        {
+            <div class="alert alert-@TempData["MessageType"] alert-dismissible fade show" role="alert">
+                @TempData["Message"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <form method="post" id="profileForm">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 d-flex justify-content-between align-items-center">
+                        <span class="d-flex align-items-center"><i class="bi bi-person me-2"></i> Basic Information</span>
+                        <button type="button" id="editProfileBtn" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                    </h5>
+                </div>
+                <div class="card-body">
+
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Student.FirstName" class="form-label">First Name</label>
+                                    <input asp-for="Student.FirstName" type="text" class="form-control" disabled />
+                                    <span asp-validation-for="Student.FirstName" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Student.LastName" class="form-label">Last Name</label>
+                                    <input asp-for="Student.LastName" type="text" class="form-control" disabled />
+                                    <span asp-validation-for="Student.LastName" class="text-danger"></span>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Student.Gender" class="form-label">Gender</label>
+                                    <select asp-for="Student.Gender" asp-items="Model.GenderOptions" class="form-control" disabled>
+                                        <option value="">-- Select Gender --</option>
+                                    </select>
+                                    <span asp-validation-for="Student.Gender" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Student.DateOfBirth" class="form-label">Date of Birth</label>
+                                    <input asp-for="Student.DateOfBirth" type="date" class="form-control" disabled />
+                                    <span asp-validation-for="Student.DateOfBirth" class="text-danger"></span>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Student.Email" class="form-label">Email Address</label>
+                                    <input asp-for="Student.Email" type="email" class="form-control" disabled />
+                                    <span asp-validation-for="Student.Email" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Student.ContactNumber" class="form-label">Contact Number</label>
+                                    <input asp-for="Student.ContactNumber" type="tel" class="form-control" disabled />
+                                    <span asp-validation-for="Student.ContactNumber" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4 text-center d-flex flex-column justify-content-center align-items-center">
+                            <div class="profile-pic-placeholder mx-auto mb-3">
+                                <i class="bi bi-person-fill profile-icon-size"></i>
+                            </div>
+                            <div id="uploadPhotoContainer" style="display:none;">
+                                <label for="photoUpload" class="btn btn-sm btn-upload-photo">Upload Photo</label>
+                                <input type="file" id="photoUpload" class="d-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="mt-4 mb-3" />
+                    <div class="mb-3">
+                        <label asp-for="Student.Address" class="form-label">Home Address</label>
+                        <textarea asp-for="Student.Address" class="form-control" rows="3" disabled></textarea>
+                    </div>
+
+                </div>
+            </div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-person-vcard me-2"></i>
+                        Student Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Student.StudentNumber" class="form-label">Student ID/Number</label>
+                            <input asp-for="Student.StudentNumber" type="text" class="form-control" disabled />
+                            <span asp-validation-for="Student.StudentNumber" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Student.YearLevel" class="form-label">Year Level</label>
+                            <input asp-for="Student.YearLevel" type="text" class="form-control" disabled />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Student.CourseProgram" class="form-label">Course / Program</label>
+                            <input asp-for="Student.CourseProgram" type="text" class="form-control" disabled />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-6 border-end">
+                            <h5 class="mb-3 d-flex align-items-center">
+                                <i class="bi bi-lock me-2"></i> Account Information
+                            </h5>
+                            <div class="mb-3">
+                                <label asp-for="Student.Username" class="form-label">Username</label>
+                                <input asp-for="Student.Username" type="text" class="form-control" disabled />
+                                <span asp-validation-for="Student.Username" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="newPassword" disabled />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label">Confirm Password</label>
+                                <input type="password" class="form-control" id="confirmPassword" disabled />
+                            </div>
+                            <input asp-for="Student.Role" type="hidden" />
+                        </div>
+
+                        <div class="col-lg-6 ps-lg-4">
+                            <h5 class="mb-3 d-flex align-items-center">
+                                <i class="bi bi-person-badge me-2"></i> Guardian Details
+                            </h5>
+
+                            <div class="mb-3">
+                                <label asp-for="Student.GuardianName" class="form-label">Guardian's Name</label>
+                                <input asp-for="Student.GuardianName" type="text" class="form-control" disabled />
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Student.GuardianContactInfo" class="form-label">Guardian's Contact</label>
+                                <input asp-for="Student.GuardianContactInfo" type="tel" class="form-control" disabled />
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Student.GuardianAddress" class="form-label">Guardian's Address</label>
+                                <input asp-for="Student.GuardianAddress" type="text" class="form-control" disabled />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-end mb-4" id="editActionButtons" style="display:none;">
+                <button type="submit" asp-page-handler="DiscardAsync" class="btn btn-lg btn-discard-changes me-2" formnovalidate>Discard Changes</button>
+                <button type="submit" asp-page-handler="UpdateAsync" class="btn btn-lg btn-update-profile">Update Profile</button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+
+            // --- SELECTORS ---
+            const profileForm = $('#profileForm');
+            const editProfileBtn = $('#editProfileBtn');
+            const editActionButtons = $('#editActionButtons');
+            const uploadPhotoContainer = $('#uploadPhotoContainer');
+
+            // Get all fields that are NOT Student ID
+            const formInputs = profileForm.find('input, textarea, select').not('[asp-for="Student.StudentNumber"]');
+
+            // --- FUNCTIONS ---
+            function setViewMode() {
+                formInputs.prop('disabled', true);
+                editProfileBtn.html('<i class="bi bi-pencil"></i> Edit');
+
+                editActionButtons.hide();
+                uploadPhotoContainer.hide();
+
+                profileForm.removeClass('edit-mode').addClass('view-mode');
+            }
+
+            function setEditMode() {
+                formInputs.prop('disabled', false);
+                editProfileBtn.html('<i class="bi bi-x-lg"></i> Cancel');
+
+                editActionButtons.show();
+                uploadPhotoContainer.show();
+
+                profileForm.removeClass('view-mode').addClass('edit-mode');
+            }
+
+            // --- PAGE LOAD ---
+            setViewMode();
+
+            // --- CLICK HANDLER ---
+            editProfileBtn.on('click', function () {
+                if (profileForm.hasClass('view-mode')) {
+                    setEditMode();
+                } else {
+                    if (confirm("Are you sure you want to cancel? Any unsaved changes will be lost.")) {
+                        location.reload();
                     }
+                }
+            });
 
-                    private void GeneratePerformanceAlerts()
-                    {
-                    // MOCK Alert Generation logic
-                    var historicalGrades = new List<(string code, string status)>
-                        {
-                        ("CPE335", "FAILED"),
-                        ("CPE101", "INC"),
-                        ("MAT201", "FAILED"),
-                        };
-
-                        foreach (var grade in historicalGrades)
-                        {
-                        if (grade.status == "FAILED")
-                        {
-                        PerformanceAlerts.Add($"<i class='bi bi-x-octagon-fill text-danger me-1'></i> **FAILED:** Subject {grade.code} (Action required).");
-                        }
-                        else if (grade.status == "INC")
-                        {
-                        PerformanceAlerts.Add($"<i class='bi bi-exclamation-triangle-fill text-warning me-1'></i> **INCOMPLETE:** Subject {grade.code} (Submit pending requirements).");
-                        }
-                        }
-                        }
-                        }
-                        }
+            // --- Handle Validation Errors ---
+            @if (!ViewContext.ModelState.IsValid)
+            {
+                    <text>
+                        setEditMode();
+                    </text>
+            }
+        });
+    </script>
+}
