@@ -161,7 +161,7 @@ namespace Trackademic.WebApp.Pages.Account
                 }
                 else
                 {
-                    return RedirectToPage("/Student/Dashboard");
+                    return RedirectToPage("/Student/StudentDashboard");
                 }
             }
             catch (Exception ex)
