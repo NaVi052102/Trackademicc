@@ -1,166 +1,175 @@
 ﻿@page
-@model Trackademic.Pages.Student.StudentDashboardModel
+@model Trackademic.WebApp.Pages.Student.Account.StudentRegistrationModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Student Profile Registration";
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/student-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/student-registration.css" asp-append-version="true" />
 }
 
-@* FIX: Removed the outer row and col-lg-11 to utilize full width *@
-<div class="dashboard-full-width-container">
+<div class="row mt-4">
 
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div class="dashboard-title-wrapper">
-            <h2>Welcome Back, Student!</h2>
-            <p class="text-muted">Quick overview of your academic status and enrolled courses.</p>
+    <div class="col-12">
+
+        <div class="mb-4">
+            <h2>Student Profile Registration</h2>
+            <p class="text-muted">Please provide your student credentials and account details.</p>
         </div>
 
-        @* --- SEARCH BAR AND NOTIFICATION BELL --- *@
-        <div class="dashboard-header-right-match">
-            <div class="search-bar">
-                <i class="bi bi-search"></i>
-                <input type="text" class="form-control" placeholder="Search for a class or subject...">
-            </div>
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-            <a id="notification-toggle" class="btn btn-link text-secondary fs-4 p-0 notification-bell" title="Grade Alerts">
-                <i class="bi bi-bell @(Model.PerformanceAlerts.Any() ? "bell-active" : "")"></i>
-                @if (Model.PerformanceAlerts.Any())
-                {
-                    <span class="badge rounded-pill bg-danger notification-count">
-                        @Model.PerformanceAlerts.Count
-                    </span>
-                }
-            </a>
-        </div>
-    </div>
-
-    @* --- 1. ACADEMIC SUMMARY CARDS (Now 4 Cards Wide) --- *@
-    <div class="row mb-5 d-flex dashboard-summary-container">
-
-        @* 1. GPA Card (Green) *@
-        <div class="col-md-3">
-            @* Changed to col-md-3 for 4-column layout *@
-            <div class="dashboard-summary-card card-gpa card-small-size">
-                <div class="dashboard-card-inner">
-                    <i class="bi bi-star-fill display-5 mb-2"></i> @* Reduced Icon Size *@
-                    <div class="summary-card-title">Cumulative GPA/GWA</div>
-                    <div class="dashboard-value-lg">@Model.CumulativeGPA.ToString("0.00")</div> @* Increased font size slightly *@
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-person me-2"></i>
+                        Basic Information
+                    </h5>
                 </div>
-            </div>
-        </div>
+                <div class="card-body">
 
-        @* 2. Total Units Earned Card (Blue) *@
-        <div class="col-md-3">
-            @* Changed to col-md-3 *@
-            <div class="dashboard-summary-card card-units card-small-size">
-                <div class="dashboard-card-inner">
-                    <i class="bi bi-list-ol display-5 mb-2"></i> @* Reduced Icon Size *@
-                    <div class="summary-card-title">Total Units Earned</div>
-                    <div class="dashboard-value-lg">@Model.TotalUnitsEarned</div>
-                </div>
-            </div>
-        </div>
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Input.FirstName" class="form-label">First Name</label>
+                                    <input asp-for="Input.FirstName" type="text" class="form-control" />
+                                    <span asp-validation-for="Input.FirstName" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Input.LastName" class="form-label">Last Name</label>
+                                    <input asp-for="Input.LastName" type="text" class="form-control" />
+                                    <span asp-validation-for="Input.LastName" class="text-danger"></span>
+                                </div>
 
-        @* 3. Subjects PASSED Card (New Green/Gray) *@
-        <div class="col-md-3">
-            @* Changed to col-md-3 *@
-            <div class="dashboard-summary-card card-passed card-small-size">
-                <div class="dashboard-card-inner">
-                    <i class="bi bi-check-circle-fill display-5 mb-2"></i>
-                    <div class="summary-card-title">Subjects Passed</div>
-                    <div class="dashboard-value-lg">@Model.PassedSubjects / @Model.TotalSubjects</div>
-                </div>
-            </div>
-        </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Input.Gender" class="form-label">Gender</label>
+                                    <select asp-for="Input.Gender" asp-items="Model.GenderOptions" class="form-control">
+                                        <option value="">-- Select Gender --</option>
+                                    </select>
+                                    <span asp-validation-for="Input.Gender" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Input.DateOfBirth" class="form-label">Date of Birth</label>
+                                    <input asp-for="Input.DateOfBirth" type="date" class="form-control" />
+                                    <span asp-validation-for="Input.DateOfBirth" class="text-danger"></span>
+                                </div>
 
-        @* 4. Subjects FAILED Card (New Red) *@
-        <div class="col-md-3">
-            @* Changed to col-md-3 *@
-            <div class="dashboard-summary-card card-failed-status card-small-size">
-                <div class="dashboard-card-inner">
-                    <i class="bi bi-x-circle-fill display-5 mb-2"></i>
-                    <div class="summary-card-title">Subjects Failed</div>
-                    <div class="dashboard-value-lg">@(Model.TotalSubjects - Model.PassedSubjects)</div>
-                </div>
-            </div>
-        </div>
-    </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Input.Email" class="form-label">Email Address</label>
+                                    <input asp-for="Input.Email" type="email" class="form-control" />
+                                    <span asp-validation-for="Input.Email" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="Input.ContactNumber" class="form-label">Contact Number</label>
+                                    <input asp-for="Input.ContactNumber" type="tel" class="form-control" />
+                                    <span asp-validation-for="Input.ContactNumber" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
 
-    @* --- 2. ALL ENROLLED CLASSES (CARD GRID) --- *@
-    <div class="mb-4">
-        <h3 class="mb-3"><i class="bi bi-archive-fill me-2"></i> All Enrolled Classes</h3>
-    </div>
-
-    <div class="class-grid-dashboard">
-        @if (Model.EnrolledClasses.Any())
-        {
-            @foreach (var cls in Model.EnrolledClasses)
-            {
-                <div class="class-card-dashboard">
-                    <div class="class-card-content">
-                        <img src="@cls.ImageUrl" alt="@cls.Description" class="class-card-image" />
-                        <div class="class-card-info">
-                            <h5>@cls.SubjectCode - @cls.Description</h5>
-                            <p>@cls.Units Units &bull; @cls.FacultyName</p>
+                        <div class="col-lg-4 text-center d-flex flex-column justify-content-center align-items-center">
+                            <div class="profile-pic-placeholder mx-auto mb-3">
+                                <i class="bi bi-person-fill profile-icon-size"></i>
+                            </div>
+                            <label for="photoUpload" class="btn btn-sm btn-upload-photo">Upload Photo</label>
+                            <input type="file" id="photoUpload" class="d-none">
                         </div>
                     </div>
-                    <div class="class-card-footer">
-                        <a href="#">View Details / Grades</a>
+
+                    <hr class="mt-4 mb-3" />
+                    <div class="mb-3">
+                        <label asp-for="Input.Address" class="form-label">Home Address</label>
+                        <textarea asp-for="Input.Address" class="form-control" rows="3"></textarea>
+                    </div>
+
+                </div>
+            </div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-person-vcard me-2"></i>
+                        Student Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Input.StudentNumber" class="form-label">Student ID/Number</label>
+                            <input asp-for="Input.StudentNumber" type="text" class="form-control" />
+                            <span asp-validation-for="Input.StudentNumber" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Input.YearLevel" class="form-label">Year Level</label>
+                            <input asp-for="Input.YearLevel" type="text" class="form-control" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Input.CourseProgram" class="form-label">Course / Program</label>
+                            <input asp-for="Input.CourseProgram" type="text" class="form-control" />
+                        </div>
                     </div>
                 </div>
-            }
-        }
-        else
-        {
-            <p class="text-muted text-center py-4">No classes found for this academic history.</p>
-        }
-    </div>
+            </div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-6 border-end">
+                            <h5 class="mb-3 d-flex align-items-center">
+                                <i class="bi bi-lock me-2"></i> Account Information
+                            </h5>
+                            <div class="mb-3">
+                                <label asp-for="Input.Username" class="form-label">Username</label>
+                                <input asp-for="Input.Username" type="text" class="form-control" />
+                                <span asp-validation-for="Input.Username" class="text-danger"></span>
+                            </div>
 
-    @* --- NOTIFICATION POPUP BOX (Hidden by default) --- *@
-    <div id="notification-popup" class="notification-popup-box card shadow-lg">
-        <div class="card-header bg-white"><i class="bi bi-bell-fill me-2 text-danger"></i> **Action Required Alerts**</div>
-        <div class="card-body p-2">
-            @if (Model.PerformanceAlerts.Any())
-            {
-                <ul class="list-unstyled mb-0 small">
-                    @foreach (var alert in Model.PerformanceAlerts)
-                    {
-                        <li class="p-1 mb-1 alert-item">@Html.Raw(alert)</li>
-                    }
-                </ul>
-                <div class="text-center mt-2">
-                    <a href="#" class="btn btn-sm btn-view-alert">View Details</a>
+                            <div class="mb-3">
+                                <label asp-for="Input.Password" class="form-label">Password</label>
+                                <input asp-for="Input.Password" class="form-control" type="password" />
+                                <span asp-validation-for="Input.Password" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Input.ConfirmPassword" class="form-label">Confirm Password</label>
+                                <input asp-for="Input.ConfirmPassword" class="form-control" type="password" />
+                                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+                            </div>
+                            <input asp-for="Input.Role" type="hidden" value="Student" />
+                        </div>
+
+                        <div class="col-lg-6 ps-lg-4">
+                            <h5 class="mb-3 d-flex align-items-center">
+                                <i class="bi bi-person-badge me-2"></i> Guardian Details
+                            </h5>
+
+                            <div class="mb-3">
+                                <label asp-for="Input.GuardianName" class="form-label">Guardian's Name</label>
+                                <input asp-for="Input.GuardianName" type="text" class="form-control" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Input.GuardianContactInfo" class="form-label">Guardian's Contact</label>
+                                <input asp-for="Input.GuardianContactInfo" type="tel" class="form-control" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Input.GuardianAddress" class="form-label">Guardian's Address</label>
+                                <input asp-for="Input.GuardianAddress" type="text" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            }
-            else
-            {
-                <p class="text-muted small m-0">No immediate grade alerts.</p>
-            }
-        </div>
-    </div>
+            </div>
+            <div class="text-end mb-4">
+                <button type="submit" class="btn btn-lg btn-create-student">Create Student Account</button>
+            </div>
 
+        </form>
+
+    </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script>
-        // JS for Notification Pop-up Toggle (Retained)
-        document.getElementById('notification-toggle').addEventListener('click', function(event) {
-            var popup = document.getElementById('notification-popup');
-            var isVisible = popup.style.display === 'block';
-            popup.style.display = isVisible ? 'none' : 'block';
-            event.stopPropagation();
-        });
-
-        document.addEventListener('click', function(event) {
-            var popup = document.getElementById('notification-popup');
-            var toggle = document.getElementById('notification-toggle');
-            if (popup.style.display === 'block' && !popup.contains(event.target) && !toggle.contains(event.target)) {
-                popup.style.display = 'none';
-            }
-        });
-        document.getElementById('notification-popup').style.display = 'none';
-    </script>
 }

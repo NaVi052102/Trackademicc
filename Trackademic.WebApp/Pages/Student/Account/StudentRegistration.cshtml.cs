@@ -4,20 +4,18 @@ using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Collections.Generic;
-using Trackademic.Core.Models; // Assuming your models are here
+using Trackademic.Core.Models; // Assumed location for models
 
 namespace Trackademic.WebApp.Pages.Student.Account
 {
     public class StudentRegistrationModel : PageModel
     {
-        // [BindProperty] for the form data
         [BindProperty]
         public InputModel Input { get; set; } = new InputModel();
 
-        // Data Transfer Object (DTO) synchronized with DB
         public class InputModel
         {
-            // Basic Information (students table)
+            // Basic Information
             [Required(ErrorMessage = "First Name is required.")]
             [StringLength(100)]
             public string FirstName { get; set; } = string.Empty;
@@ -30,7 +28,7 @@ namespace Trackademic.WebApp.Pages.Student.Account
             [DataType(DataType.Date)]
             public DateTime DateOfBirth { get; set; }
 
-            public string Gender { get; set; } = string.Empty; // Maps to students.sex
+            public string Gender { get; set; } = string.Empty;
 
             [Required]
             [Phone]
@@ -40,31 +38,31 @@ namespace Trackademic.WebApp.Pages.Student.Account
             [Required]
             [EmailAddress]
             [StringLength(100)]
-            public string Email { get; set; } = string.Empty; // Maps to students.email
+            public string Email { get; set; } = string.Empty;
 
-            public string Address { get; set; } = string.Empty; // Maps to students.home_address
+            public string Address { get; set; } = string.Empty;
 
             // Student Details
             [Required(ErrorMessage = "Student ID/Number is required.")]
             [StringLength(20)]
-            public string StudentNumber { get; set; } = string.Empty; // Maps to students.student_number
+            public string StudentNumber { get; set; } = string.Empty;
 
             [StringLength(50)]
             public string YearLevel { get; set; } = string.Empty;
 
-            public string CourseProgram { get; set; } = string.Empty; // Maps to students.course_program
+            public string CourseProgram { get; set; } = string.Empty;
 
+            // Guardian Details
             public string GuardianName { get; set; } = string.Empty;
             public string GuardianContactInfo { get; set; } = string.Empty;
+            public string GuardianAddress { get; set; } = string.Empty; // Added property
 
-            // Account Information (users table)
+            // Account Information
             [Required]
             [StringLength(255)]
-            public string Username { get; set; } = string.Empty; // Maps to users.username
+            public string Username { get; set; } = string.Empty;
 
-            public string GuardianAddress { get; set; } = string.Empty;
-
-            public string Role { get; set; } = "Student"; // Hardcoded for this form
+            public string Role { get; set; } = "Student";
 
             [Required]
             [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters.")]
@@ -76,7 +74,6 @@ namespace Trackademic.WebApp.Pages.Student.Account
             public string ConfirmPassword { get; set; } = string.Empty;
         }
 
-        // Dropdown options
         public List<SelectListItem> GenderOptions { get; set; } = new List<SelectListItem>
         {
             new SelectListItem { Value = "male", Text = "Male" },
@@ -86,21 +83,19 @@ namespace Trackademic.WebApp.Pages.Student.Account
 
         public void OnGet()
         {
-            // Initial load logic
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
             if (!ModelState.IsValid)
             {
-                // This line will execute if any [Required] field is empty
                 return Page();
             }
 
-            // Database saving logic goes here (create user, then student)
+            // --- Database saving logic goes here ---
 
             TempData["SuccessMessage"] = "Student Registration Successful!";
-            return RedirectToPage("/Account/Login"); // Redirects to login page
+            return RedirectToPage("/Account/Login");
         }
     }
 }

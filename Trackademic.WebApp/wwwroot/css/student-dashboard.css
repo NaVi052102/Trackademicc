@@ -57,75 +57,6 @@
         font-size: 0.9rem;
     }
 
-/* Notification Bell Styling */
-.notification-bell {
-    position: relative;
-    color: #6c757d !important;
-    transition: color 0.2s;
-    border: none;
-    background-color: transparent;
-    padding: 0.1rem;
-    line-height: 1;
-    font-size: 1.4rem;
-}
-
-    .notification-bell:hover {
-        color: #007bff !important;
-    }
-
-.notification-count {
-    position: absolute;
-    top: -3px;
-    right: -3px;
-    font-size: 0.6rem;
-    padding: 0.2em 0.3em;
-    background-color: #dc3545;
-    color: white;
-    border-radius: 50%;
-    min-width: 15px;
-    height: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* --- NOTIFICATION POPUP BOX --- */
-.notification-popup-box {
-    position: absolute;
-    top: 90px;
-    right: 5%;
-    width: 350px;
-    z-index: 1000;
-    border-radius: 10px;
-    border: 1px solid #f5c6cb;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-}
-
-    .notification-popup-box .card-header {
-        font-size: 0.9rem;
-        font-weight: 600;
-        border-bottom: 1px solid #eee;
-    }
-
-.alert-item {
-    padding: 0.5rem;
-    border-bottom: 1px solid #eee;
-    font-size: 0.85rem;
-    color: #333;
-}
-
-    .alert-item:last-child {
-        border-bottom: none;
-    }
-
-.btn-view-alert {
-    background-color: #dc3545;
-    color: white !important;
-    font-size: 0.8rem;
-    padding: 0.3rem 0.8rem;
-    border-radius: 5px;
-}
-
 
 /* --- SUMMARY CARD STYLING --- */
 
@@ -459,3 +390,36 @@
         max-width: 100%;
     }
 }
+
+/* Header Right Side (Search and Bell) */
+.dashboard-header-right-match {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding-top: 5px;
+    flex-shrink: 0;
+}
+
+/* Search Bar Styling */
+.search-bar {
+    position: relative;
+    max-width: 250px;
+}
+
+    .search-bar input {
+        border-radius: 20px;
+        padding-left: 2.5rem;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        height: 35px;
+        font-size: 0.9rem;
+    }
+
+    .search-bar .bi-search {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
