@@ -42,7 +42,7 @@ namespace Trackademic.WebApp.Pages.Account
             {
                 if (User.IsInRole("Teacher")) Response.Redirect("/Teachers/Dashboard");
                 else if (User.IsInRole("Admin")) Response.Redirect("/Admin/Dashboard");
-                else Response.Redirect("/Student/Dashboard");
+                else Response.Redirect("/Student/StudentDashboard");
             }
 
             ViewData["Role"] = handler;
