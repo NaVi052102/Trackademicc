@@ -27,11 +27,30 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.IsEssential = true;
     });
 
+// Authorization Services (Define the Rules)
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdmin", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("RequireTeacher", policy => policy.RequireRole("Teacher"));
+    options.AddPolicy("RequireStudent", policy => policy.RequireRole("Student"));
+});
+
 // Simple Razor Pages Registration (Avoids Auth Errors)
 builder.Services.AddRazorPages()
     .AddRazorPagesOptions(options =>
     {
-     options.Conventions.AddPageRoute("/Account/Login", "");
+        // Set Login as Homepage
+        options.Conventions.AddPageRoute("/Account/Login", "");
+
+        // SECURE THE FOLDERS
+        options.Conventions.AuthorizeFolder("/Admin", "RequireAdmin");
+        options.Conventions.AuthorizeFolder("/Teachers", "RequireTeacher");
+        options.Conventions.AuthorizeFolder("/Student", "RequireStudent");
+
+        // ALLOW ANONYMOUS ACCESS
+        options.Conventions.AllowAnonymousToPage("/Account/Login");
+        options.Conventions.AllowAnonymousToPage("/Account/ForgotPassword");
+        options.Conventions.AllowAnonymousToPage("/Error");
     });
 
 // Register All Application Services

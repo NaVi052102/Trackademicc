@@ -94,7 +94,7 @@ namespace Trackademic.WebApp.Pages.Account
             if (userId == 0)
             {
                 // Generic error to prevent email enumeration attacks
-                ModelState.AddModelError("Input.Email", "Email not found in our records.");
+                ModelState.AddModelError("Input.Email", "Email not found.");
                 return Page();
             }
 
