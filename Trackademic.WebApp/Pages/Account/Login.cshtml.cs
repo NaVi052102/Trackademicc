@@ -50,12 +50,13 @@ namespace Trackademic.WebApp.Pages.Account
 
         public async Task<IActionResult> OnPostAsync(string handler)
         {
+            string loginRole = string.IsNullOrEmpty(handler) ? "Student" : handler;
+            ViewData["Role"] = loginRole;
+
             if (!ModelState.IsValid)
             {
                 return Page();
             }
-
-            string loginRole = string.IsNullOrEmpty(handler) ? "Student" : handler;
 
             try
             {
@@ -64,7 +65,7 @@ namespace Trackademic.WebApp.Pages.Account
                 string fullName = "";
                 string userRole = "";
 
-                // Attempt to find User as the Selected Role (Teacher or Student)
+                // 2. Attempt to find User
                 if (loginRole.Equals("Teacher", StringComparison.OrdinalIgnoreCase))
                 {
                     var teacher = await _context.Teachers
@@ -94,11 +95,9 @@ namespace Trackademic.WebApp.Pages.Account
                     }
                 }
 
-                // If not found yet, check if it is an ADMIN login
-                // This allows Admins to login regardless of which tab (Student/Teacher) is active.
+                // 3. Admin Fallback
                 if (userId == 0)
                 {
-                    // Check Users table for a matching Username where UserType is Admin
                     var adminUser = await _context.Users
                         .FirstOrDefaultAsync(u => u.Username == Input.SchoolID && u.UserType == "Admin");
 
@@ -108,13 +107,13 @@ namespace Trackademic.WebApp.Pages.Account
                         storedPasswordHash = adminUser.PasswordHash;
                         userRole = "Admin";
 
-                        // Fetch Admin profile for pretty name
+                        // Optional: fetch admin details
                         var adminProfile = await _context.Admins.FirstOrDefaultAsync(a => a.Id == userId);
                         fullName = adminProfile != null ? $"{adminProfile.FirstName} {adminProfile.LastName}" : "Administrator";
                     }
                 }
 
-                // Verify Password
+                // 4. Verify Password
                 bool isPasswordValid = false;
                 if (userId != 0)
                 {
@@ -127,7 +126,7 @@ namespace Trackademic.WebApp.Pages.Account
                     return Page();
                 }
 
-                // Create Identity
+                // 5. Create Identity
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, fullName),
@@ -150,19 +149,9 @@ namespace Trackademic.WebApp.Pages.Account
 
                 _logger.LogInformation($"User {Input.SchoolID} logged in as {userRole}.");
 
-                // Redirect based on Role
-                if (userRole == "Teacher")
-                {
-                    return RedirectToPage("/Teachers/Dashboard");
-                }
-                else if (userRole == "Admin")
-                {
-                    return RedirectToPage("/Admin/Dashboard");
-                }
-                else
-                {
-                    return RedirectToPage("/Student/StudentDashboard");
-                }
+                if (userRole == "Teacher") return RedirectToPage("/Teacher/Dashboard");
+                else if (userRole == "Admin") return RedirectToPage("/Admin/Dashboard");
+                else return RedirectToPage("/Student/StudentDashboard");
             }
             catch (Exception ex)
             {
