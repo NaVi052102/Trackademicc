@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic; // Added for List<SelectListItem>
 using Trackademic.Core.Interfaces;
+using Trackademic.Core.Models;
 using Trackademic.Data.Data;
 using Trackademic.Data.Repositories;
 using Trackademic.Services.Implementations;
-using Trackademic.Core.Models;
-using System.Collections.Generic; // Added for List<SelectListItem>
+//using Trackademic.WebApp.Data;  // Database Seeder For Testing
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -15,7 +16,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<TrackademicDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// --- 1. Add Authentication (Cookie Configuration) ---
+// Add Authentication (Cookie Configuration)
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -26,23 +27,25 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.IsEssential = true;
     });
 
-// --- 2. Simple Razor Pages Registration (Avoids Auth Errors) ---
-builder.Services.AddRazorPages();
+// Simple Razor Pages Registration (Avoids Auth Errors)
+builder.Services.AddRazorPages()
+    .AddRazorPagesOptions(options =>
+    {
+     options.Conventions.AddPageRoute("/Account/Login", "");
+    });
 
-// --- 3. Register All Application Services ---
+// Register All Application Services
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IClassRepository, ClassRepository>();
-// Add other repository registrations here
-// builder.Services.AddScoped<IUnitOfWork, UnitOfWork>(); 
-// ...etc...
+
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IGradeService, GradeService>(); // FIX for Grades View
-// ...etc...
+builder.Services.AddScoped<IGradeService, GradeService>();
+builder.Services.AddTransient<IEmailService, EmailService>();
 
-// Add Session support
+// Added Session support
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(10);
@@ -51,6 +54,22 @@ builder.Services.AddSession(options =>
 });
 
 var app = builder.Build();
+
+// Seed the database (for testing purposes)
+/*using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<TrackademicDbContext>();
+        DbInitializer.Initialize(context);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred creating the DB.");
+    }
+}*/
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -70,6 +89,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();
-app.MapFallbackToPage("/Index");
+//app.MapFallbackToPage("/Account/Login"); //it might override specific 404s
 
 app.Run();

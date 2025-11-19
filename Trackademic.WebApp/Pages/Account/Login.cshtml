@@ -69,7 +69,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script>
         $(document).ready(function () {
-            // --- This script toggles the 'active' button ---
+            // This script toggles the 'active' button
             const studentBtn = document.getElementById("studentBtn");
             const teacherBtn = document.getElementById("teacherBtn");
             const currentPath = window.location.pathname.toLowerCase();
@@ -82,7 +82,7 @@
                 teacherBtn.classList.remove("active");
             }
 
-            // --- ADD THIS JAVASCRIPT FOR THE EYE ICON ---
+            // ADD THIS JAVASCRIPT FOR THE EYE ICON
             $(".toggle-password").on('click', function() {
                 var icon = $(this).find('i');
                 var input = $(this).prev('input'); // Get the input field

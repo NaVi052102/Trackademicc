@@ -1,33 +1,34 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Trackademic.Core.Interfaces;
-using Trackademic.Core.Models;
+using System.Security.Claims;
+using Trackademic.Data.Data;
+using BCrypt.Net;
 
 namespace Trackademic.WebApp.Pages.Account
 {
     public class LoginModel : PageModel
     {
-        private readonly IAuthService _authService;
+        private readonly TrackademicDbContext _context;
+        private readonly ILogger<LoginModel> _logger;
 
-        public LoginModel(IAuthService authService)
+        public LoginModel(TrackademicDbContext context, ILogger<LoginModel> logger)
         {
-            _authService = authService;
+            _context = context;
+            _logger = logger;
         }
 
-        // FIX: Input is initialized
         [BindProperty]
         public InputModel Input { get; set; } = new InputModel();
 
-        // FIX: ErrorMessage is nullable
-        public string? ErrorMessage { get; set; }
+        public string ErrorMessage { get; set; } = string.Empty;
 
         public class InputModel
         {
-            // FIX: Properties are initialized
-            [Required(ErrorMessage = "School ID is required.")]
+            [Required(ErrorMessage = "School ID or Username is required.")]
             public string SchoolID { get; set; } = string.Empty;
 
             [Required(ErrorMessage = "Password is required.")]
@@ -35,8 +36,16 @@ namespace Trackademic.WebApp.Pages.Account
             public string Password { get; set; } = string.Empty;
         }
 
-        public void OnGet(string handler)
+        public void OnGet(string handler = "Student")
         {
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                if (User.IsInRole("Teacher")) Response.Redirect("/Teachers/Dashboard");
+                else if (User.IsInRole("Admin")) Response.Redirect("/Admin/Dashboard");
+                else Response.Redirect("/Student/Dashboard");
+            }
+
+            ViewData["Role"] = handler;
         }
 
         public async Task<IActionResult> OnPostAsync(string handler)
@@ -46,32 +55,121 @@ namespace Trackademic.WebApp.Pages.Account
                 return Page();
             }
 
-            // UserType is passed as a STRING to the service
-            var userType = (handler?.ToLower() == "teacher") ? "Teacher" : "Student";
-            var user = await _authService.LoginAsync(Input.SchoolID, Input.Password, userType);
+            string loginRole = string.IsNullOrEmpty(handler) ? "Student" : handler;
 
-            if (user == null)
+            try
             {
-                ErrorMessage = "Invalid School ID or Password.";
+                long userId = 0;
+                string storedPasswordHash = "";
+                string fullName = "";
+                string userRole = "";
+
+                // Attempt to find User as the Selected Role (Teacher or Student)
+                if (loginRole.Equals("Teacher", StringComparison.OrdinalIgnoreCase))
+                {
+                    var teacher = await _context.Teachers
+                        .Include(t => t.User)
+                        .FirstOrDefaultAsync(t => t.TeacherId == Input.SchoolID);
+
+                    if (teacher != null && teacher.User != null)
+                    {
+                        userId = teacher.User.Id;
+                        storedPasswordHash = teacher.User.PasswordHash;
+                        fullName = $"{teacher.FirstName} {teacher.LastName}";
+                        userRole = "Teacher";
+                    }
+                }
+                else // Student
+                {
+                    var student = await _context.Students
+                        .Include(s => s.User)
+                        .FirstOrDefaultAsync(s => s.StudentNumber == Input.SchoolID);
+
+                    if (student != null && student.User != null)
+                    {
+                        userId = student.User.Id;
+                        storedPasswordHash = student.User.PasswordHash;
+                        fullName = $"{student.FirstName} {student.LastName}";
+                        userRole = "Student";
+                    }
+                }
+
+                // If not found yet, check if it is an ADMIN login
+                // This allows Admins to login regardless of which tab (Student/Teacher) is active.
+                if (userId == 0)
+                {
+                    // Check Users table for a matching Username where UserType is Admin
+                    var adminUser = await _context.Users
+                        .FirstOrDefaultAsync(u => u.Username == Input.SchoolID && u.UserType == "Admin");
+
+                    if (adminUser != null)
+                    {
+                        userId = adminUser.Id;
+                        storedPasswordHash = adminUser.PasswordHash;
+                        userRole = "Admin";
+
+                        // Fetch Admin profile for pretty name
+                        var adminProfile = await _context.Admins.FirstOrDefaultAsync(a => a.Id == userId);
+                        fullName = adminProfile != null ? $"{adminProfile.FirstName} {adminProfile.LastName}" : "Administrator";
+                    }
+                }
+
+                // Verify Password
+                bool isPasswordValid = false;
+                if (userId != 0)
+                {
+                    isPasswordValid = BCrypt.Net.BCrypt.Verify(Input.Password, storedPasswordHash);
+                }
+
+                if (!isPasswordValid)
+                {
+                    ErrorMessage = "Invalid Credentials.";
+                    return Page();
+                }
+
+                // Create Identity
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, fullName),
+                    new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                    new Claim(ClaimTypes.Role, userRole),
+                    new Claim("SchoolID", Input.SchoolID)
+                };
+
+                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = true,
+                    ExpiresUtc = DateTime.UtcNow.AddMinutes(60)
+                };
+
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    new ClaimsPrincipal(claimsIdentity),
+                    authProperties);
+
+                _logger.LogInformation($"User {Input.SchoolID} logged in as {userRole}.");
+
+                // Redirect based on Role
+                if (userRole == "Teacher")
+                {
+                    return RedirectToPage("/Teachers/Dashboard");
+                }
+                else if (userRole == "Admin")
+                {
+                    return RedirectToPage("/Admin/Dashboard");
+                }
+                else
+                {
+                    return RedirectToPage("/Student/Dashboard");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing login.");
+                ErrorMessage = "An internal error occurred.";
                 return Page();
             }
-
-            // Set the user's session
-            HttpContext.Session.SetString("Username", user.Username);
-            HttpContext.Session.SetString("UserRole", user.UserType);
-            HttpContext.Session.SetInt32("UserId", (int)user.Id);
-
-            // FIX: Comparison is string to string
-            if (user.UserType == "Student")
-            {
-                return RedirectToPage("/Student/Dashboard");
-            }
-            else if (user.UserType == "Teacher")
-            {
-                return RedirectToPage("/Teacher/Dashboard");
-            }
-
-            return RedirectToPage("/Index");
         }
     }
 }

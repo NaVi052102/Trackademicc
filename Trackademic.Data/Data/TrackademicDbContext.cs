@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using Trackademic.Core.Models; // <-- 1. This line is fixed
+using Trackademic.Core.Models;
 
 namespace Trackademic.Data.Data;
 

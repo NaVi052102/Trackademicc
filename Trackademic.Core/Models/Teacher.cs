@@ -7,8 +7,8 @@ namespace Trackademic.Core.Models
 {
     public partial class Teacher
     {
-        [Key] // Identifies this as the Primary Key
-        [ForeignKey("User")] // Links it to the User table
+        [Key]
+        [ForeignKey("User")]
         public long Id { get; set; }
 
         [Column("teacher_id")]
@@ -30,7 +30,7 @@ namespace Trackademic.Core.Models
         public string? ContactNumber { get; set; }
 
         [Column("date_of_birth")]
-        public DateOnly? DateOfBirth { get; set; } // Your database uses DATE, DateOnly is correct.
+        public DateOnly? DateOfBirth { get; set; }
 
         [Column("address")]
         public string? Address { get; set; }
@@ -38,13 +38,13 @@ namespace Trackademic.Core.Models
         [Column("profile_picture_url")]
         public string? ProfilePictureUrl { get; set; }
 
-        // --- FIX 1 ---
+        // FIX
         // Renamed 'Classassignments' to 'ClassAssignments' to match DbContext
         public virtual ICollection<Classassignment> ClassAssignments { get; set; } = new List<Classassignment>();
 
         public virtual Department Department { get; set; } = null!;
 
-        // --- FIX 2 ---
+        // FIX
         // Renamed 'IdNavigation' to 'User' to match DbContext
         public virtual User User { get; set; } = null!;
     }
