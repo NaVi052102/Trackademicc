@@ -1,201 +1,112 @@
-﻿@page
-@model Trackademic.WebApp.Pages.Student.Account.StudentProfileModel
-@{
-    ViewData["Title"] = "Student Profile";
-}
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Collections.Generic;
+using System.Linq;
+using System;
+using Trackademic.Core.Interfaces; // Assuming this namespace exists
+using Trackademic.Core.Models;     // Assuming this namespace exists
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/student-registration.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/student-profile.css" asp-append-version="true" />
-}
+namespace Trackademic.Pages.Student
+{
+    // Class definition for the Enrolled Classes list
+    public class ClassEnrollmentDisplay
+    {
+        public string SubjectCode { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string FacultyName { get; set; } = string.Empty;
+        public int Units { get; set; } = 0;
+        public string ImageUrl { get; set; } = "/images/logo.png";
+    }
 
-<div class="row mt-4">
+    public class StudentDashboardModel : PageModel
+    {
+        private readonly IGradeService _gradeService;
 
-    <div class="col-12">
+        public StudentDashboardModel(IGradeService gradeService)
+        {
+            _gradeService = gradeService;
+        }
 
-        <div class="mb-4">
-            <h2 class="d-inline-block me-3">Student Profile</h2>
-            <p class="text-muted">Review your personal and account details.</p>
-        </div>
+        // --- PROPERTIES REQUIRED BY THE RAZOR VIEW (Initialized) ---
 
-        <div>
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 d-flex align-items-center">
-                        <i class="bi bi-person me-2"></i>
-                        Basic Information
-                    </h5>
-                    @* EDIT BUTTON for Basic Info - Logo Only *@
-                    <button type="button" class="btn btn-sm btn-edit-profile btn-icon-only" title="Edit Basic Information">
-                        <img src="/images/edit-logo.svg" alt="Edit" class="edit-icon-img" />
-                    </button>
-                </div>
-                <div class="card-body">
+        public decimal CumulativeGPA { get; set; } = 0.0m;
+        public int TotalUnitsEarned { get; set; } = 0;
+        public int PassedSubjects { get; set; } = 0;
+        public int TotalSubjects { get; set; } = 0;
 
-                    <div class="row">
-                        <div class="col-lg-8">
-                            <div class="row align-items-center">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label profile-label">First Name</label>
-                                    <div class="profile-field-container">
-                                        <p class="profile-value">@Model.Profile.FirstName</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label profile-label">Last Name</label>
-                                    <div class="profile-field-container">
-                                        <p class="profile-value">@Model.Profile.LastName</p>
-                                    </div>
-                                </div>
+        public List<string>
+    PerformanceAlerts { get; set; } = new();
+    public Dictionary<string, decimal>
+        GpaHistory { get; set; } = new();
+        public List<ClassEnrollmentDisplay>
+            EnrolledClasses { get; set; } = new();
 
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label profile-label">Gender</label>
-                                    <div class="profile-field-container">
-                                        <p class="profile-value">@Model.Profile.Gender</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label profile-label">Date of Birth</label>
-                                    <div class="profile-field-container">
-                                        <p class="profile-value">@Model.Profile.DateOfBirth.ToString("MMMM dd, yyyy")</p>
-                                    </div>
-                                </div>
+            // --- PAGE HANDLER AND LOGIC ---
 
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label profile-label">Email Address</label>
-                                    <div class="profile-field-container">
-                                        <p class="profile-value">@Model.Profile.Email</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label profile-label">Contact Number</label>
-                                    <div class="profile-field-container">
-                                        <p class="profile-value">@Model.Profile.ContactNumber</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            public void OnGet()
+            {
+            LoadCurrentTermClasses();
+            LoadGpaHistory();
+            CalculateCumulativeStatistics();
+            GeneratePerformanceAlerts();
+            }
 
-                        <div class="col-lg-4 text-center d-flex flex-column justify-content-center align-items-center">
-                            <div class="profile-pic-placeholder mx-auto mb-3">
-                                <img src="@Model.Profile.ProfilePictureUrl" alt="Profile Picture" class="profile-pic-img" onerror="this.style.display='none'; this.parentNode.querySelector('span').style.display='block';" />
-                                <span style="display: @(string.IsNullOrEmpty(Model.Profile.ProfilePictureUrl) ? "block" : "none");">(Profile)</span>
-                            </div>
-                            <label for="photoUpload" class="btn btn-sm btn-upload-photo">Change Photo</label>
-                            <input type="file" id="photoUpload" class="d-none">
-                        </div>
-                    </div>
+            private void LoadCurrentTermClasses()
+            {
+            // MOCK DATA for Enrolled Classes
+            EnrolledClasses = new List<ClassEnrollmentDisplay>
+                {
+                new ClassEnrollmentDisplay { SubjectCode = "CPE331", Description = "Data and Digital Communications", FacultyName = "SEMBLANTE, J. N.", Units = 3 },
+                new ClassEnrollmentDisplay { SubjectCode = "CPE361", Description = "Logic Circuits and Design", FacultyName = "CORTES, S. G.", Units = 4 },
+                new ClassEnrollmentDisplay { SubjectCode = "ES038", Description = "Technopreneurship", FacultyName = "BARRIOQUINTO, E. M.", Units = 3 },
+                new ClassEnrollmentDisplay { SubjectCode = "CPE333", Description = "Basic Safety and Health", FacultyName = "ALFEREZ, N.", Units = 3 },
+                new ClassEnrollmentDisplay { SubjectCode = "CPE335", Description = "Feedback and Control Systems", FacultyName = "TAMPUS, M. J.", Units = 3 },
+                };
+                }
 
-                    <hr class="mt-4 mb-3" />
-                    <div class="mb-3">
-                        <label class="form-label profile-label">Home Address</label>
-                        <div class="profile-field-container">
-                            <p class="profile-value">@Model.Profile.Address</p>
-                        </div>
-                    </div>
+                private void CalculateCumulativeStatistics()
+                {
+                // MOCK Cumulative Data
+                CumulativeGPA = 4.12m;
+                TotalUnitsEarned = 78;
+                PassedSubjects = 18;
+                TotalSubjects = 20;
+                }
 
-                </div>
-            </div>
 
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 d-flex align-items-center">
-                        <i class="bi bi-person-vcard me-2"></i>
-                        Student Details
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label profile-label">Student ID/Number</label>
-                            <div class="profile-field-container">
-                                <p class="profile-value font-weight-bold">@Model.Profile.StudentNumber</p>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label profile-label">Year Level</label>
-                            <div class="profile-field-container">
-                                <p class="profile-value">@Model.Profile.YearLevel</p>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label profile-label">Course / Program</label>
-                            <div class="profile-field-container">
-                                <p class="profile-value">@Model.Profile.CourseProgram</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                private void LoadGpaHistory()
+                {
+                // MOCK GPA HISTORY
+                GpaHistory = new Dictionary<string, decimal>
+                    {
+                    { "Spr '23", 3.75m },
+                    { "Fall '23", 3.90m },
+                    { "Spr '24", 4.05m },
+                    { "Fall '24", 4.12m }
+                    };
+                    }
 
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-lg-6 border-end">
-                            <h5 class="mb-3 d-flex justify-content-between align-items-center">
-                                <span class="d-flex align-items-center">
-                                    <i class="bi bi-lock me-2"></i> Account Information
-                                </span>
-                                @* Change Password Button - Text required here *@
-                                <button type="button" class="btn btn-sm btn-edit-password" title="Change Password">
-                                    <i class="bi bi-key-fill"></i> Change Password
-                                </button>
-                            </h5>
-                            <div class="mb-3">
-                                <label class="form-label profile-label">Username</label>
-                                <div class="profile-field-container">
-                                    <p class="profile-value">@Model.Profile.Username</p>
-                                </div>
-                            </div>
+                    private void GeneratePerformanceAlerts()
+                    {
+                    // MOCK Alert Generation logic
+                    var historicalGrades = new List<(string code, string status)>
+                        {
+                        ("CPE335", "FAILED"),
+                        ("CPE101", "INC"),
+                        ("MAT201", "FAILED"),
+                        };
 
-                            <div class="mb-3">
-                                <label class="form-label profile-label">Password</label>
-                                <div class="profile-field-container">
-                                    <p class="profile-value">********</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-6 ps-lg-4">
-                            <h5 class="mb-3 d-flex justify-content-between align-items-center">
-                                <span class="d-flex align-items-center">
-                                    <i class="bi bi-person-badge me-2"></i> Guardian Details
-                                </span>
-                                @* EDIT BUTTON for Guardian Details - Logo Only *@
-                                <button type="button" class="btn btn-sm btn-edit-profile btn-icon-only" title="Edit Guardian Details">
-                                    <img src="/images/edit-logo.svg" alt="Edit" class="edit-icon-img" />
-                                </button>
-                            </h5>
-
-                            <div class="mb-3">
-                                <label class="form-label profile-label">Guardian's Name</label>
-                                <div class="profile-field-container">
-                                    <p class="profile-value">@Model.Profile.GuardianName</p>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label profile-label">Guardian's Contact</label>
-                                <div class="profile-field-container">
-                                    <p class="profile-value">@Model.Profile.GuardianContactInfo</p>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label profile-label">Guardian's Address</label>
-                                <div class="profile-field-container">
-                                    <p class="profile-value">@Model.Profile.GuardianAddress</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</div>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+                        foreach (var grade in historicalGrades)
+                        {
+                        if (grade.status == "FAILED")
+                        {
+                        PerformanceAlerts.Add($"<i class='bi bi-x-octagon-fill text-danger me-1'></i> **FAILED:** Subject {grade.code} (Action required).");
+                        }
+                        else if (grade.status == "INC")
+                        {
+                        PerformanceAlerts.Add($"<i class='bi bi-exclamation-triangle-fill text-warning me-1'></i> **INCOMPLETE:** Subject {grade.code} (Submit pending requirements).");
+                        }
+                        }
+                        }
+                        }
+                        }

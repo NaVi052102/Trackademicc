@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="~/css/student-dashboard.css" asp-append-version="true" />
 }
 
-@* FIX: Removed the outer row and col-lg-11 to utilize full width *@
 <div class="dashboard-full-width-container">
 
     <div class="d-flex justify-content-between align-items-start mb-4">
@@ -17,7 +16,6 @@
             <p class="text-muted">Quick overview of your academic status and enrolled courses.</p>
         </div>
 
-        @* --- SEARCH BAR AND NOTIFICATION BELL --- *@
         <div class="dashboard-header-right-match">
             <div class="search-bar">
                 <i class="bi bi-search"></i>
@@ -36,36 +34,30 @@
         </div>
     </div>
 
-    @* --- 1. ACADEMIC SUMMARY CARDS (Now 4 Cards Wide) --- *@
+    @* --- 1. ACADEMIC SUMMARY CARDS --- *@
     <div class="row mb-5 d-flex dashboard-summary-container">
 
-        @* 1. GPA Card (Green) *@
         <div class="col-md-3">
-            @* Changed to col-md-3 for 4-column layout *@
             <div class="dashboard-summary-card card-gpa card-small-size">
                 <div class="dashboard-card-inner">
-                    <i class="bi bi-star-fill display-5 mb-2"></i> @* Reduced Icon Size *@
+                    <i class="bi bi-star-fill display-5 mb-2"></i>
                     <div class="summary-card-title">Cumulative GPA/GWA</div>
-                    <div class="dashboard-value-lg">@Model.CumulativeGPA.ToString("0.00")</div> @* Increased font size slightly *@
+                    <div class="dashboard-value-lg">@Model.CumulativeGPA.ToString("0.00")</div>
                 </div>
             </div>
         </div>
 
-        @* 2. Total Units Earned Card (Blue) *@
         <div class="col-md-3">
-            @* Changed to col-md-3 *@
             <div class="dashboard-summary-card card-units card-small-size">
                 <div class="dashboard-card-inner">
-                    <i class="bi bi-list-ol display-5 mb-2"></i> @* Reduced Icon Size *@
+                    <i class="bi bi-list-ol display-5 mb-2"></i>
                     <div class="summary-card-title">Total Units Earned</div>
                     <div class="dashboard-value-lg">@Model.TotalUnitsEarned</div>
                 </div>
             </div>
         </div>
 
-        @* 3. Subjects PASSED Card (New Green/Gray) *@
         <div class="col-md-3">
-            @* Changed to col-md-3 *@
             <div class="dashboard-summary-card card-passed card-small-size">
                 <div class="dashboard-card-inner">
                     <i class="bi bi-check-circle-fill display-5 mb-2"></i>
@@ -75,9 +67,7 @@
             </div>
         </div>
 
-        @* 4. Subjects FAILED Card (New Red) *@
         <div class="col-md-3">
-            @* Changed to col-md-3 *@
             <div class="dashboard-summary-card card-failed-status card-small-size">
                 <div class="dashboard-card-inner">
                     <i class="bi bi-x-circle-fill display-5 mb-2"></i>
@@ -88,7 +78,87 @@
         </div>
     </div>
 
-    @* --- 2. ALL ENROLLED CLASSES (CARD GRID) --- *@
+    @* --- 2. GPA HISTORY & CURRENT PERFORMANCE (NEW SECTION) --- *@
+    <div class="row mb-5 dashboard-main-content">
+
+        @* 2a. GPA History Bar Graph (Left Column) *@
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100 p-3">
+                <h3 class="card-title mb-3"><i class="bi bi-graph-up me-2 text-primary"></i>GPA History</h3>
+                <div class="card-body p-0 d-flex flex-column justify-content-end">
+                    @if (Model.GpaHistory.Any())
+                    {
+                        <div class="gpa-bar-chart">
+                            @foreach (var entry in Model.GpaHistory)
+                            {
+                                var barHeight = (int)((entry.Value / 5.0m) * 100);
+                                var barColor = entry.Value >= 4.0m ? "gpa-bar-green" : (entry.Value >= 3.0m ? "gpa-bar-yellow" : "gpa-bar-red");
+
+                                <div class="gpa-bar-wrapper" title="GPA @entry.Value.ToString("0.00")">
+                                    <div class="gpa-bar @barColor" style="height: @(barHeight)%;">
+                                        <span class="gpa-value">@entry.Value.ToString("0.00")</span>
+                                    </div>
+                                    <div class="gpa-label">@entry.Key</div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center py-5">No GPA history available.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* 2b. Current Semester Performance (Right Column) *@
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100 p-3">
+                <h3 class="card-title mb-3"><i class="bi bi-bullseye me-2 text-success"></i>Current Semester Performance</h3>
+                <div class="card-body performance-list p-0">
+                    @if (Model.PerformanceData.Any())
+                    {
+                        <ul class="list-unstyled">
+                            @foreach (var perf in Model.PerformanceData)
+                            {
+                                string progressClass;
+                                if (perf.Percentage >= 75)
+                                {
+                                    progressClass = "bg-success";
+                                }
+                                else if (perf.Percentage >= 60)
+                                {
+                                    progressClass = "bg-warning";
+                                }
+                                else
+                                {
+                                    progressClass = "bg-danger";
+                                }
+
+                                <li class="performance-item">
+                                    <div class="subject-info">
+                                        <strong>@perf.SubjectCode</strong> - <span class="text-muted">@perf.Description</span>
+                                    </div>
+                                    <div class="progress-wrapper">
+                                        <div class="progress performance-progress">
+                                            <div class="progress-bar @progressClass" role="progressbar" style="width: @(perf.Percentage)%;" aria-valuenow="@perf.Percentage" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <span class="progress-text @(perf.Percentage >= 70 ? "text-white" : "text-dark")">@perf.Percentage%</span>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center py-5">No current semester performance data available.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* --- 3. ALL ENROLLED CLASSES (CARD GRID) --- *@
     <div class="mb-4">
         <h3 class="mb-3"><i class="bi bi-archive-fill me-2"></i> All Enrolled Classes</h3>
     </div>
