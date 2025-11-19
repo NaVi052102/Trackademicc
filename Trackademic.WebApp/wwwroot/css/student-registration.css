@@ -1,18 +1,27 @@
 ﻿/* --- Custom Styles for Student Registration --- */
 
+
+
 /* Ensures the icon-text header has flex properties */
+
 .card-header h5 {
     display: flex;
     align-items: center;
     gap: 0.5rem; /* Space between icon and text */
 }
 
+
+
 /* Added for the main card */
+
 .registration-card {
     border-radius: 15px;
 }
 
+
+
 /* Profile image placeholder */
+
 .profile-pic-placeholder {
     width: 150px;
     height: 150px;
@@ -27,7 +36,10 @@
     font-size: 0.9rem;
 }
 
+
+
 /* Button styles */
+
 .btn-create-student {
     background-color: #6c757d;
     border-color: #6c757d;
@@ -37,11 +49,15 @@
     width: 300px; /* Kept wide for visual impact */
 }
 
+
+
     .btn-create-student:hover {
         background-color: #28a745;
         border-color: #28a745;
         color: #ffffff;
     }
+
+
 
 .btn-upload-photo {
     background-color: #6c757d;
@@ -50,13 +66,18 @@
     border-radius: 15px;
 }
 
+
+
     .btn-upload-photo:hover {
         background-color: #28a745;
         border-color: #28a745;
         color: #ffffff;
     }
 
+
+
 /* Icon Styles */
+
 .card-header .bi {
     font-size: 1.5rem;
     vertical-align: middle;

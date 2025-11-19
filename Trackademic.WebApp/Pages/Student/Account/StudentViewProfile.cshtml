@@ -1,0 +1,201 @@
+﻿@page
+@model Trackademic.WebApp.Pages.Student.Account.StudentProfileModel
+@{
+    ViewData["Title"] = "Student Profile";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/student-registration.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/student-profile.css" asp-append-version="true" />
+}
+
+<div class="row mt-4">
+
+    <div class="col-12">
+
+        <div class="mb-4">
+            <h2 class="d-inline-block me-3">Student Profile</h2>
+            <p class="text-muted">Review your personal and account details.</p>
+        </div>
+
+        <div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-person me-2"></i>
+                        Basic Information
+                    </h5>
+                    @* EDIT BUTTON for Basic Info - Logo Only *@
+                    <button type="button" class="btn btn-sm btn-edit-profile btn-icon-only" title="Edit Basic Information">
+                        <img src="/images/edit-logo.svg" alt="Edit" class="edit-icon-img" />
+                    </button>
+                </div>
+                <div class="card-body">
+
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="row align-items-center">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label profile-label">First Name</label>
+                                    <div class="profile-field-container">
+                                        <p class="profile-value">@Model.Profile.FirstName</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label profile-label">Last Name</label>
+                                    <div class="profile-field-container">
+                                        <p class="profile-value">@Model.Profile.LastName</p>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label profile-label">Gender</label>
+                                    <div class="profile-field-container">
+                                        <p class="profile-value">@Model.Profile.Gender</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label profile-label">Date of Birth</label>
+                                    <div class="profile-field-container">
+                                        <p class="profile-value">@Model.Profile.DateOfBirth.ToString("MMMM dd, yyyy")</p>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label profile-label">Email Address</label>
+                                    <div class="profile-field-container">
+                                        <p class="profile-value">@Model.Profile.Email</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label profile-label">Contact Number</label>
+                                    <div class="profile-field-container">
+                                        <p class="profile-value">@Model.Profile.ContactNumber</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4 text-center d-flex flex-column justify-content-center align-items-center">
+                            <div class="profile-pic-placeholder mx-auto mb-3">
+                                <img src="@Model.Profile.ProfilePictureUrl" alt="Profile Picture" class="profile-pic-img" onerror="this.style.display='none'; this.parentNode.querySelector('span').style.display='block';" />
+                                <span style="display: @(string.IsNullOrEmpty(Model.Profile.ProfilePictureUrl) ? "block" : "none");">(Profile)</span>
+                            </div>
+                            <label for="photoUpload" class="btn btn-sm btn-upload-photo">Change Photo</label>
+                            <input type="file" id="photoUpload" class="d-none">
+                        </div>
+                    </div>
+
+                    <hr class="mt-4 mb-3" />
+                    <div class="mb-3">
+                        <label class="form-label profile-label">Home Address</label>
+                        <div class="profile-field-container">
+                            <p class="profile-value">@Model.Profile.Address</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 d-flex align-items-center">
+                        <i class="bi bi-person-vcard me-2"></i>
+                        Student Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label profile-label">Student ID/Number</label>
+                            <div class="profile-field-container">
+                                <p class="profile-value font-weight-bold">@Model.Profile.StudentNumber</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label profile-label">Year Level</label>
+                            <div class="profile-field-container">
+                                <p class="profile-value">@Model.Profile.YearLevel</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label profile-label">Course / Program</label>
+                            <div class="profile-field-container">
+                                <p class="profile-value">@Model.Profile.CourseProgram</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-6 border-end">
+                            <h5 class="mb-3 d-flex justify-content-between align-items-center">
+                                <span class="d-flex align-items-center">
+                                    <i class="bi bi-lock me-2"></i> Account Information
+                                </span>
+                                @* Change Password Button - Text required here *@
+                                <button type="button" class="btn btn-sm btn-edit-password" title="Change Password">
+                                    <i class="bi bi-key-fill"></i> Change Password
+                                </button>
+                            </h5>
+                            <div class="mb-3">
+                                <label class="form-label profile-label">Username</label>
+                                <div class="profile-field-container">
+                                    <p class="profile-value">@Model.Profile.Username</p>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label profile-label">Password</label>
+                                <div class="profile-field-container">
+                                    <p class="profile-value">********</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6 ps-lg-4">
+                            <h5 class="mb-3 d-flex justify-content-between align-items-center">
+                                <span class="d-flex align-items-center">
+                                    <i class="bi bi-person-badge me-2"></i> Guardian Details
+                                </span>
+                                @* EDIT BUTTON for Guardian Details - Logo Only *@
+                                <button type="button" class="btn btn-sm btn-edit-profile btn-icon-only" title="Edit Guardian Details">
+                                    <img src="/images/edit-logo.svg" alt="Edit" class="edit-icon-img" />
+                                </button>
+                            </h5>
+
+                            <div class="mb-3">
+                                <label class="form-label profile-label">Guardian's Name</label>
+                                <div class="profile-field-container">
+                                    <p class="profile-value">@Model.Profile.GuardianName</p>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label profile-label">Guardian's Contact</label>
+                                <div class="profile-field-container">
+                                    <p class="profile-value">@Model.Profile.GuardianContactInfo</p>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label profile-label">Guardian's Address</label>
+                                <div class="profile-field-container">
+                                    <p class="profile-value">@Model.Profile.GuardianAddress</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -122,27 +122,26 @@ main {
     border-bottom: 1px solid #c3e6cb;
 }
 
-/* --- DOWNLOAD BUTTON STYLE (Icon) --- */
-.btn-download-report {
-    background-color: #28a745; /* Theme green */
-    border-color: #28a745;
-    color: white;
-    border-radius: 50%; /* Make it circular */
-    width: 38px;
-    height: 38px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
-    transition: background-color 0.2s;
+/* --- DOWNLOAD ICON LINK (Non-Circular Style) --- */
+
+/* This class styles the <a> tag holding the image */
+.download-icon-link {
+    display: inline-block;
+    padding: 4px; /* Optional: Small padding for click area */
+    transition: transform 0.2s;
 }
 
-    .btn-download-report:hover {
-        background-color: #1e8334;
+    /* Green glow/scaling effect on hover */
+    .download-icon-link:hover {
+        transform: scale(1.1); /* Slight scaling for aesthetic feel */
+        /* Re-color the icon to the theme green on hover */
+        filter: invert(30%) sepia(90%) saturate(1000%) hue-rotate(80deg) brightness(80%);
     }
 
-    /* Style the icon inside the download button */
-    .btn-download-report i {
-        color: white; /* Ensure the Bootstrap icon is white */
-    }
+/* Style the SVG image itself */
+.download-icon-img {
+    width: 28px; /* INCREASED SIZE for better visibility (original was 18px) */
+    height: 28px;
+    /* Ensure the default SVG color is dark/visible on the light background */
+    /* If your SVG is black, no filter is needed here. */
+}
