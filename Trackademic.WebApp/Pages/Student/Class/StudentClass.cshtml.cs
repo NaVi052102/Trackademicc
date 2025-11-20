@@ -54,16 +54,16 @@ namespace Trackademic.WebApp.Pages.Student
             if (string.IsNullOrEmpty(Semester)) Semester = "First";
             if (string.IsNullOrEmpty(Status)) Status = "Enrolled";
 
-            // --- MOCK DATA ---
+            // --- MOCK DATA NOW INCLUDES INSTRUCTOR NAME ---
             Classes = new List<ClassCardViewModel>
             {
-                new ClassCardViewModel { Title = "Embedded Systems", StudentCount = 40, ImageUrl = "/images/logo.png" },
-                new ClassCardViewModel { Title = "Data Structures", StudentCount = 45, ImageUrl = "/images/logo.png" },
-                new ClassCardViewModel { Title = "Software Design", StudentCount = 38, ImageUrl = "/images/logo.png" },
-                new ClassCardViewModel { Title = "Technopreneurship", StudentCount = 42, ImageUrl = "/images/logo.png" },
-                new ClassCardViewModel { Title = "Logic Circuits", StudentCount = 40, ImageUrl = "/images/logo.png" },
-                new ClassCardViewModel { Title = "Data Communications", StudentCount = 37, ImageUrl = "/images/logo.png" },
-                new ClassCardViewModel { Title = "Software Development 1", StudentCount = 39, ImageUrl = "/images/logo.png" }
+                new ClassCardViewModel { Title = "Embedded Systems", StudentCount = 40, ImageUrl = "/images/logo.png", InstructorName = "Dr. Allan Turing" },
+                new ClassCardViewModel { Title = "Data Structures", StudentCount = 45, ImageUrl = "/images/logo.png", InstructorName = "Prof. Grace Hopper" },
+                new ClassCardViewModel { Title = "Software Design", StudentCount = 38, ImageUrl = "/images/logo.png", InstructorName = "Dr. John Von Neumann" },
+                new ClassCardViewModel { Title = "Technopreneurship", StudentCount = 42, ImageUrl = "/images/logo.png", InstructorName = "Ms. Ada Lovelace" },
+                new ClassCardViewModel { Title = "Logic Circuits", StudentCount = 40, ImageUrl = "/images/logo.png", InstructorName = "Dr. Alan Kay" },
+                new ClassCardViewModel { Title = "Data Communications", StudentCount = 37, ImageUrl = "/images/logo.png", InstructorName = "Prof. Dennis Ritchie" },
+                new ClassCardViewModel { Title = "Software Development 1", StudentCount = 39, ImageUrl = "/images/logo.png", InstructorName = "Dr. Bjarne Stroustrup" }
             };
         }
     }
@@ -73,5 +73,7 @@ namespace Trackademic.WebApp.Pages.Student
         public string Title { get; set; } = string.Empty;
         public int StudentCount { get; set; }
         public string ImageUrl { get; set; } = string.Empty;
+        // NEW PROPERTY
+        public string InstructorName { get; set; } = string.Empty;
     }
 }

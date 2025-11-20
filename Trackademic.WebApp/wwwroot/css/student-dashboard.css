@@ -36,7 +36,7 @@
 /* Search Bar Styling */
 .search-bar {
     position: relative;
-    max-width: 250px;
+    max-width: 250px; /* Applies to the header search */
 }
 
     .search-bar input {
@@ -56,6 +56,11 @@
         color: #6c757d;
         font-size: 0.9rem;
     }
+
+/* 🛑 NEW: Ensure modal search bar uses full width within modal 🛑 */
+#classDetailsModal .search-bar {
+    max-width: 100%;
+}
 
 
 /* --- SUMMARY CARD STYLING --- */
@@ -265,6 +270,8 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     transition: all 0.2s ease-in-out;
     overflow: hidden;
+    /* Make the whole card clickable for the modal */
+    cursor: pointer;
 }
 
     .class-card-dashboard:hover {
@@ -308,24 +315,16 @@
         margin-bottom: 0;
     }
 
+/* HIDE the footer link as the whole card is now the trigger */
 .class-card-footer {
-    border-top: 1px solid #e0e0e0;
-    padding: 0.75rem 1rem;
-    background-color: #fdfdfd;
-    text-align: left;
+    display: none;
 }
 
-    .class-card-footer a {
-        display: inline-block;
-        text-decoration: none;
-        font-weight: 500;
-        color: #007bff;
-        white-space: nowrap;
-    }
-
-        .class-card-footer a:hover {
-            text-decoration: underline;
-        }
+/* 🚀 FIX: Targeted Horizontal Centering for Modal Dialog 🚀 */
+/* This ensures the modal dialog is centered horizontally by overriding Bootstrap's default margin. */
+.modal-dialog {
+    margin: auto;
+}
 
 
 /* --- Responsive adjustments --- */
@@ -389,37 +388,9 @@
         flex: 0 0 100%;
         max-width: 100%;
     }
-}
 
-/* Header Right Side (Search and Bell) */
-.dashboard-header-right-match {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    padding-top: 5px;
-    flex-shrink: 0;
-}
-
-/* Search Bar Styling */
-.search-bar {
-    position: relative;
-    max-width: 250px;
-}
-
-    .search-bar input {
-        border-radius: 20px;
-        padding-left: 2.5rem;
-        background-color: #f8f9fa;
-        border: 1px solid #dee2e6;
-        height: 35px;
-        font-size: 0.9rem;
+    /* Ensure search bar takes full width on small screens */
+    .search-bar {
+        max-width: 100%;
     }
-
-    .search-bar .bi-search {
-        position: absolute;
-        left: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #6c757d;
-        font-size: 0.9rem;
-    }
+}

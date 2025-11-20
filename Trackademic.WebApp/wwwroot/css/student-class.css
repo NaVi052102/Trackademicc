@@ -66,6 +66,7 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     transition: all 0.2s ease-in-out;
     overflow: hidden;
+    cursor: pointer;
 }
 
     .class-card:hover {
@@ -104,16 +105,10 @@
         margin-bottom: 0;
     }
 
+/* Hide the footer link */
 .class-card-footer {
-    border-top: 1px solid #e0e0e0;
-    padding: 0.75rem 1rem;
-    background-color: #fdfdfd;
+    display: none;
 }
-
-    .class-card-footer a {
-        text-decoration: none;
-        font-weight: 500;
-    }
 
 /* --- NEW BUTTON STYLE --- */
 .btn-filter {
@@ -127,6 +122,13 @@
         border-color: #28a745;
         color: #ffffff;
     }
+
+/* 🚀 FIX: Targeted Horizontal Centering for Modal Dialog 🚀 */
+/* This overrides the default Bootstrap margin to ensure the modal container is centered. 
+   It works in conjunction with modal-dialog-centered in the HTML for full screen centering. */
+.modal-dialog {
+    margin: auto;
+}
 
 /* Responsive adjustments */
 @@media (max-width: 992px) {

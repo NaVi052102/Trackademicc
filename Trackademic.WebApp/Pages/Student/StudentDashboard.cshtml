@@ -158,16 +158,19 @@
         {
             @foreach (var cls in Model.EnrolledClasses)
             {
-                <div class="class-card-dashboard">
+                <div class="class-card-dashboard"
+                     onclick="showClassDetailsModal(this)"
+                     data-code="@cls.SubjectCode"
+                     data-description="@cls.Description"
+                     data-faculty="@cls.FacultyName"
+                     data-units="@cls.Units"
+                     data-image="@cls.ImageUrl">
                     <div class="class-card-content">
                         <img src="@cls.ImageUrl" alt="@cls.Description" class="class-card-image" />
                         <div class="class-card-info">
                             <h5>@cls.SubjectCode - @cls.Description</h5>
                             <p>@cls.Units Units &bull; @cls.FacultyName</p>
                         </div>
-                    </div>
-                    <div class="class-card-footer">
-                        <a href="#">View Details / Grades</a>
                     </div>
                 </div>
             }
@@ -178,5 +181,116 @@
         }
     </div>
 
-    
 </div>
+
+<div class="modal fade" id="classDetailsModal" tabindex="-1" aria-labelledby="classDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalSubjectCode"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center mb-3">
+                    <img id="modalSubjectImage" src="" alt="Subject Image" class="class-card-image me-3" style="width: 80px; height: 80px;" />
+                    <div>
+                        <h4 id="modalDescription"></h4>
+                        <p class="text-muted mb-1"><i class="bi bi-person-fill me-2"></i> <span id="modalFacultyName"></span></p>
+                        <p class="text-muted mb-0"><i class="bi bi-book-fill me-2"></i> <span id="modalUnits"></span> Units</p>
+                    </div>
+                </div>
+
+                <hr />
+
+                <h6 class="mb-3">Quick Access</h6>
+                <div class="d-flex justify-content-start gap-3 mb-3">
+                    <a href="#" class="btn btn-outline-secondary btn-sm"><i class="bi bi-journal-check me-1"></i> Grades</a>
+                </div>
+
+                <h6 class="mb-3">Student Roster</h6>
+                <div class="search-bar mb-3">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="dashboardStudentSearchInput" class="form-control" placeholder="Search students by name or ID">
+                </div>
+
+                <div id="studentListContainer" style="max-height: 250px; overflow-y: auto;">
+                    <ul class="list-group" id="dashboardStudentList">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            John Doe
+                            <span class="badge bg-primary rounded-pill">ID: 20210001</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Jane Smith
+                            <span class="badge bg-primary rounded-pill">ID: 20210002</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Robert Green
+                            <span class="badge bg-primary rounded-pill">ID: 20210003</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Alice Johnson
+                            <span class="badge bg-primary rounded-pill">ID: 20210004</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Bob Williams
+                            <span class="badge bg-primary rounded-pill">ID: 20210005</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Charlie Brown
+                            <span class="badge bg-primary rounded-pill">ID: 20210006</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Diana Prince
+                            <span class="badge bg-primary rounded-pill">ID: 20210007</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // JS function to handle the click and display the class details modal
+        function showClassDetailsModal(cardElement) {
+            // 1. Get data attributes from the clicked card
+            const code = cardElement.getAttribute('data-code');
+            const description = cardElement.getAttribute('data-description');
+            const faculty = cardElement.getAttribute('data-faculty');
+            const units = cardElement.getAttribute('data-units');
+            const image = cardElement.getAttribute('data-image');
+
+            // 2. Update the modal content
+            document.getElementById('modalSubjectCode').innerText = code;
+            document.getElementById('modalDescription').innerText = description;
+            document.getElementById('modalFacultyName').innerText = faculty;
+            document.getElementById('modalUnits').innerText = units;
+            document.getElementById('modalSubjectImage').src = image;
+
+            // 3. Show the modal
+            var classDetailsModal = new bootstrap.Modal(document.getElementById('classDetailsModal'));
+            classDetailsModal.show();
+        }
+
+        // Student Search/Filter functionality (Client-Side for the Dashboard Modal)
+        document.getElementById('dashboardStudentSearchInput').addEventListener('keyup', function() {
+            const filter = this.value.toUpperCase();
+            const ul = document.getElementById('dashboardStudentList');
+            const li = ul.getElementsByTagName('li');
+
+            // Loop through all list items, and hide those that don't match the search query
+            for (let i = 0; i < li.length; i++) {
+                const text = li[i].textContent || li[i].innerText;
+                if (text.toUpperCase().indexOf(filter) > -1) {
+                    li[i].style.display = ""; // Show
+                } else {
+                    li[i].style.display = "none"; // Hide
+                }
+            }
+        });
+    </script>
+}

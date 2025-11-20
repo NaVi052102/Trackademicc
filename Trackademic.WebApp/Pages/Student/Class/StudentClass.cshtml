@@ -31,19 +31,103 @@
 <div class="class-grid">
     @foreach (var cls in Model.Classes)
     {
-        <div class="class-card">
+        <div class="class-card"
+             data-title="@cls.Title"
+             data-instructor="@cls.InstructorName"
+             onclick="showRosterModal(this)">
             <div class="class-card-content">
                 <img src="@cls.ImageUrl" alt="@cls.Title" class="class-card-image" />
-                <div class.class-card-info">
+                <div class="class-card-info">
                     <h5>@cls.Title</h5>
                     <p>@cls.StudentCount Students</p>
                 </div>
-            </div>
-            <div class="class-card-footer">
-                <a href="#">View Roster</a>
             </div>
         </div>
     }
 </div>
 
 <div style="height: 50px;"></div>
+
+<div class="modal fade" id="rosterModal" tabindex="-1" aria-labelledby="rosterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex flex-column">
+                    <h5 class="modal-title" id="rosterModalTitle"></h5>
+                    <p class="mb-0 text-secondary" id="rosterModalInstructor"></p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="search-bar mb-3">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="studentSearchInput" class="form-control" placeholder="Search students by name or ID">
+                </div>
+
+                <div id="studentListContainer">
+                    <ul class="list-group" id="studentList">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            John Doe
+                            <span class="badge bg-primary rounded-pill">ID: 20210001</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Jane Smith
+                            <span class="badge bg-primary rounded-pill">ID: 20210002</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Robert Green
+                            <span class="badge bg-primary rounded-pill">ID: 20210003</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Alice Johnson
+                            <span class="badge bg-primary rounded-pill">ID: 20210004</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Bob Williams
+                            <span class="badge bg-primary rounded-pill">ID: 20210005</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // JS function to handle the click, update modal content, and display the modal
+        function showRosterModal(cardElement) {
+            // Get data attributes from the clicked card
+            const title = cardElement.getAttribute('data-title');
+            const instructor = cardElement.getAttribute('data-instructor');
+
+            // Update the modal content
+            document.getElementById('rosterModalTitle').innerText = title;
+            document.getElementById('rosterModalInstructor').innerText = `Instructor: ${instructor}`;
+
+            // Show the modal using Bootstrap's JS API
+            var rosterModal = new bootstrap.Modal(document.getElementById('rosterModal'));
+            rosterModal.show();
+        }
+
+        // Student Search/Filter functionality (Client-Side)
+        document.getElementById('studentSearchInput').addEventListener('keyup', function() {
+            const filter = this.value.toUpperCase();
+            const ul = document.getElementById('studentList');
+            const li = ul.getElementsByTagName('li');
+
+            // Loop through all list items, and hide those that don't match the search query
+            for (let i = 0; i < li.length; i++) {
+                const text = li[i].textContent || li[i].innerText;
+                if (text.toUpperCase().indexOf(filter) > -1) {
+                    li[i].style.display = ""; // Show
+                } else {
+                    li[i].style.display = "none"; // Hide
+                }
+            }
+        });
+    </script>
+}
