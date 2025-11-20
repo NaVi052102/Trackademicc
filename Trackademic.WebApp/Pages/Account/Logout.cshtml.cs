@@ -11,13 +11,13 @@ namespace Trackademic.WebApp.Pages.Account
         // for security reasons (prevents Cross-Site Request Forgery).
         public async Task<IActionResult> OnPostAsync()
         {
-            // 1. Clear the existing external cookie
+            // Clear the existing external cookie
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-            // 2. Clear the Session to ensure no data lingers
+            // Clear the Session to ensure no data lingers
             HttpContext.Session.Clear();
 
-            // 3. Redirect user back to the Login page
+            // Redirect user back to the Login page
             return RedirectToPage("/Account/Login");
         }
     }

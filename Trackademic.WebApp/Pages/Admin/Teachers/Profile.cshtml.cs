@@ -109,18 +109,18 @@ namespace Trackademic.WebApp.Pages.Admin.Teachers
         // Helper method to load static department data
         private void LoadDepartments()
         {
-            var staticDepartments = new List<StaticDepartmentModel>
-            {
-                new StaticDepartmentModel { Id = 1, Name = "Mathematics" },
-                new StaticDepartmentModel { Id = 2, Name = "Computer Engineering" },
-                new StaticDepartmentModel { Id = 3, Name = "Physics" },
-            };
+            //var staticDepartments = new List<StaticDepartmentModel>
+            //{
+                //new StaticDepartmentModel { Id = 1, Name = "Mathematics" },
+                //new StaticDepartmentModel { Id = 2, Name = "Computer Engineering" },
+                //new StaticDepartmentModel { Id = 3, Name = "Physics" },
+            //};
 
-            Departments = staticDepartments.Select(d => new SelectListItem 
-            {
-                Value = d.Id.ToString(), 
-                Text = d.Name            
-            }).ToList();
+            //Departments = staticDepartments.Select(d => new SelectListItem 
+            //{
+                //Value = d.Id.ToString(), 
+               // Text = d.Name            
+            //}).ToList();
         }
     }
 

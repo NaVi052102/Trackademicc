@@ -36,7 +36,7 @@
 
         .icon-wrapper {
             font-size: 4rem;
-            color: #dc3545; /* Bootstrap Danger Red */
+            color: #dc3545;
             margin-bottom: 1rem;
         }
 
@@ -52,7 +52,7 @@
         }
 
         .btn-home {
-            background-color: #000; /* Trackademic Black */
+            background-color: #000;
             color: white;
             padding: 10px 30px;
             border-radius: 5px;
@@ -78,7 +78,6 @@
             If you believe this is an error, please contact your administrator.
         </p>
 
-        <!-- Logic to send them to the correct dashboard based on who they are -->
         @if (User.IsInRole("Admin"))
         {
             <a href="/Admin/Dashboard" class="btn-home">Return to Dashboard</a>
