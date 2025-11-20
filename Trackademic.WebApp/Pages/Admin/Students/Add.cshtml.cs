@@ -1,149 +1,260 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.Rendering; // Added for SelectListItem
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System.ComponentModel.DataAnnotations;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Linq; // Added for Linq operations
+using Trackademic.Data.Data;
+using Trackademic.Data.Models;
+using BCrypt.Net;
+using Microsoft.EntityFrameworkCore;
 
 namespace Trackademic.WebApp.Pages.Admin.Students
 {
-    // Ensure this is restricted to Admin role in production!
+    // RESTRICT TO ADMIN
+    // [Authorize(Roles = "Admin")] 
     public class AddModel : PageModel
     {
-        // 1. Property to bind the entire form data to the ViewModel
-        [BindProperty]
-        public StudentRegistrationViewModel StudentInput { get; set; }
-        
-        // 2. Property to hold the Department options for the dropdown
-        public List<SelectListItem> Departments { get; set; }
+        private readonly TrackademicDbContext _context;
+        private readonly IWebHostEnvironment _environment;
+        private readonly ILogger<AddModel> _logger;
 
-        public void OnGet()
+        public AddModel(
+            TrackademicDbContext context,
+            IWebHostEnvironment environment,
+            ILogger<AddModel> logger)
         {
-            // Set the default user type for the account creation
-            StudentInput = new StudentRegistrationViewModel { UserType = "Student" };
-            
-            // Load Departments (Static Data Simulation)
-            LoadDepartments();
+            _context = context;
+            _environment = environment;
+            _logger = logger;
+            StudentInput = new StudentRegistrationViewModel
+            {
+                Username = string.Empty,
+                Password = string.Empty,
+                StudentNumber = string.Empty,
+                FirstName = string.Empty,
+                LastName = string.Empty,
+                Gender = string.Empty,
+                CourseProgram = string.Empty,
+                YearLevel = string.Empty,
+                UserType = "Student",
+                ContactNumber = string.Empty,
+            };
         }
 
-        public async Task<IActionResult> OnPost()
-        {
-            LoadDepartments(); // Reload departments to keep the dropdown populated on error
+        [BindProperty]
+        public StudentRegistrationViewModel StudentInput { get; set; }
 
-            // 3. Perform server-side validation check
+        public List<SelectListItem> Departments { get; set; } = new List<SelectListItem>();
+        public List<SelectListItem> GenderOptions { get; set; } = new List<SelectListItem>();
+        public List<SelectListItem> YearLevelOptions { get; set; } = new List<SelectListItem>();
+
+        public async Task OnGetAsync()
+        {
+            StudentInput = new StudentRegistrationViewModel
+            {
+                Username = string.Empty,
+                Password = string.Empty,
+                StudentNumber = string.Empty,
+                FirstName = string.Empty,
+                LastName = string.Empty,
+                Gender = string.Empty,
+                CourseProgram = string.Empty,
+                YearLevel = string.Empty,
+                UserType = "Student",
+                ContactNumber = string.Empty,
+            };
+            await LoadDropdownsAsync();
+        }
+
+        public async Task<IActionResult> OnPostAsync()
+        {
             if (!ModelState.IsValid)
             {
-                // If validation fails, return to the page with error messages
+                foreach (var modelState in ModelState.Values)
+                {
+                    foreach (var error in modelState.Errors)
+                    {
+                        _logger.LogError($"VALIDATION ERROR: {error.ErrorMessage}");
+                    }
+                }
+
+                await LoadDropdownsAsync();
                 return Page();
             }
 
-            // --- Database and File Handling Logic Goes Here ---
-
-            // A. Handle File Upload (Simulation)
-            if (StudentInput.PhotoUpload != null)
+            // Check for Duplicates
+            bool usernameExists = await _context.Users.AnyAsync(u => u.Username == StudentInput.Username);
+            if (usernameExists)
             {
-                // Logic to save the file and update StudentInput.ProfilePictureUrl goes here
+                ModelState.AddModelError("StudentInput.Username", "This username is already taken.");
+                _logger.LogError("ERROR: Username taken.");
+                await LoadDropdownsAsync();
+                return Page();
             }
 
-            // B. Database Transaction: Insert into 'users' table, then 'students' table
-
-            // For now, we simulate success
-            TempData["Message"] = $"Student {StudentInput.FirstName} {StudentInput.LastName} ({StudentInput.StudentNumber}) successfully registered!";
-            TempData["MessageType"] = "success"; 
-            
-            // 4. Redirect to prevent resubmission (Post/Redirect/Get pattern)
-            return RedirectToPage("./Add");
-        }
-        
-        // Helper method to load static department data
-        private void LoadDepartments()
-        {
-            var staticDepartments = new List<StaticDepartmentModel>
+            bool studentIdExists = await _context.Students.AnyAsync(s => s.StudentNumber == StudentInput.StudentNumber);
+            if (studentIdExists)
             {
-                new StaticDepartmentModel { Id = 1, Name = "Computer Engineering" },
-                new StaticDepartmentModel { Id = 2, Name = "Electrical Engineering" },
-                new StaticDepartmentModel { Id = 3, Name = "Civil Engineering" },
-                new StaticDepartmentModel { Id = 4, Name = "General Education" },
+                ModelState.AddModelError("StudentInput.StudentNumber", "This Student Number already exists.");
+                _logger.LogError("ERROR: Student ID exists.");
+                await LoadDropdownsAsync();
+                return Page();
+            }
+
+            bool emailExists = await _context.Students.AnyAsync(s => s.Email == StudentInput.Email);
+            if (emailExists)
+            {
+                ModelState.AddModelError("StudentInput.Email", "This email address is already registered to another student.");
+                _logger.LogError("ERROR: Email duplicate found.");
+                await LoadDropdownsAsync();
+                return Page();
+            }
+
+            // File Upload Logic
+            string? uniqueFileName = null;
+            if (StudentInput.PhotoUpload != null)
+            {
+                string uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "students");
+                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+                uniqueFileName = Guid.NewGuid().ToString() + "_" + StudentInput.PhotoUpload.FileName;
+                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await StudentInput.PhotoUpload.CopyToAsync(fileStream);
+                }
+                StudentInput.ProfilePictureUrl = "/uploads/students/" + uniqueFileName;
+            }
+
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // User Creation
+                    var newUser = new User
+                    {
+                        Username = StudentInput.Username,
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(StudentInput.Password),
+                        UserType = "Student"
+                    };
+                    _context.Users.Add(newUser);
+                    await _context.SaveChangesAsync();
+
+                    // Student Creation
+                    var newStudent = new Trackademic.Data.Models.Student
+                    {
+                        Id = newUser.Id,
+                        StudentNumber = StudentInput.StudentNumber,
+                        FirstName = StudentInput.FirstName,
+                        LastName = StudentInput.LastName,
+                        Email = StudentInput.Email,
+                        ContactNumber = StudentInput.ContactNumber,
+                        DateOfBirth = StudentInput.DateOfBirth.HasValue ? DateOnly.FromDateTime(StudentInput.DateOfBirth.Value) : (DateOnly?)null,
+                        Address = StudentInput.Address,
+                        ProfilePictureUrl = StudentInput.ProfilePictureUrl,
+                        Gender = StudentInput.Gender,
+                        YearLevel = StudentInput.YearLevel,
+                        CourseProgram = StudentInput.CourseProgram
+                    };
+                    _context.Students.Add(newStudent);
+                    await _context.SaveChangesAsync();
+
+                    await transaction.CommitAsync();
+
+                    TempData["Message"] = $"SUCCESS: Student profile created.";
+                    TempData["MessageType"] = "success";
+                    return RedirectToPage("./Add");
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    _logger.LogError($"DATABASE EXCEPTION: {ex.Message}");
+                    if (ex.InnerException != null)
+                    {
+                        _logger.LogError($"INNER EXCEPTION: {ex.InnerException.Message}");
+                    }
+
+                    ModelState.AddModelError(string.Empty, "An error occurred: " + ex.Message);
+                    await LoadDropdownsAsync();
+                    return Page();
+                }
+            }
+        }
+
+        private async Task LoadDropdownsAsync()
+        {
+            Departments = await _context.Departments
+                .OrderBy(d => d.DeptName)
+                .Select(d => new SelectListItem { Value = d.DeptName, Text = d.DeptName })
+                .ToListAsync();
+
+            GenderOptions = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "Male", Text = "Male" },
+                new SelectListItem { Value = "Female", Text = "Female" },
+                new SelectListItem { Value = "Prefer not to say", Text = "Prefer not to say" }
             };
 
-            Departments = staticDepartments.Select(d => new SelectListItem 
+            YearLevelOptions = new List<SelectListItem>
             {
-                Value = d.Id.ToString(), 
-                Text = d.Name            
-            }).ToList();
+                new SelectListItem { Value = "1st Year", Text = "1st Year" },
+                new SelectListItem { Value = "2nd Year", Text = "2nd Year" },
+                new SelectListItem { Value = "3rd Year", Text = "3rd Year" },
+                new SelectListItem { Value = "4th Year", Text = "4th Year" },
+                new SelectListItem { Value = "5th Year", Text = "5th Year" }
+            };
         }
     }
 
-    // =========================================================================
-    // VIEW MODEL: Maps directly to form fields and database constraints
-    // =========================================================================
     public class StudentRegistrationViewModel
     {
-        // --- USERS TABLE FIELDS ---
-        [Required(ErrorMessage = "Username is required.")]
-        [StringLength(255)]
-        public string Username { get; set; }
+        [Required(ErrorMessage = "Username is required")]
+        public required string Username { get; set; }
 
-        [Required(ErrorMessage = "Password is required.")]
+        [Required(ErrorMessage = "Password is required")]
         [DataType(DataType.Password)]
-        public string Password { get; set; }
+        public required string Password { get; set; }
 
         [DataType(DataType.Password)]
-        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
-        public string ConfirmPassword { get; set; }
+        [Compare("Password", ErrorMessage = "Passwords do not match")]
+        public string? ConfirmPassword { get; set; }
 
-        [HiddenInput]
-        public string UserType { get; set; } 
+        public required string UserType { get; set; }
 
-        // --- STUDENTS TABLE FIELDS ---
-        [Required(ErrorMessage = "Student Number is required.")]
-        [StringLength(20)]
-        public string StudentNumber { get; set; }
-        
-        [Required(ErrorMessage = "Department is required.")]
-        public long DepartmentId { get; set; } // NEW FIELD
-        
-        [Required(ErrorMessage = "First Name is required.")]
-        [StringLength(100)]
-        [Display(Name = "First Name")]
-        public string FirstName { get; set; }
+        [Required(ErrorMessage = "Student Number is required")]
+        public required string StudentNumber { get; set; }
 
-        [Required(ErrorMessage = "Last Name is required.")]
-        [StringLength(100)]
-        [Display(Name = "Last Name")]
-        public string LastName { get; set; }
+        [Required(ErrorMessage = "First Name is required")]
+        public required string FirstName { get; set; }
 
-        [EmailAddress(ErrorMessage = "Invalid Email format.")]
-        [StringLength(100)]
-        [Display(Name = "Email Address")]
-        public string Email { get; set; }
+        [Required(ErrorMessage = "Last Name is required")]
+        public required string LastName { get; set; }
 
-        [Phone(ErrorMessage = "Invalid Contact Number.")]
-        [StringLength(20)]
-        [Display(Name = "Contact Number")]
-        public string ContactNumber { get; set; }
+        [Required(ErrorMessage = "Gender is required")]
+        public required string Gender { get; set; }
 
+        [Required(ErrorMessage = "Date of Birth is required")]
         [DataType(DataType.Date)]
-        [Display(Name = "Date of Birth")]
         public DateTime? DateOfBirth { get; set; }
 
-        [Display(Name = "Address")]
-        public string Address { get; set; }
+        [Required(ErrorMessage = "Course/Program is required")]
+        public required string CourseProgram { get; set; }
 
-        public string ProfilePictureUrl { get; set; }
+        [Required(ErrorMessage = "Year Level is required")]
+        public required string YearLevel { get; set; }
 
-        // --- FILE UPLOAD (NOT saved to DB directly) ---
+        [EmailAddress]
+        public string? Email { get; set; }
+
+        [Required(ErrorMessage = "Contact Number is required")]
+        [RegularExpression(@"^\d{11}$", ErrorMessage = "Contact Number must be exactly 11 digits (e.g., 09123456789).")]
+        public required string ContactNumber { get; set; }
+
+        public string? Address { get; set; }
+
+        public string? ProfilePictureUrl { get; set; }
+
+        [Required(ErrorMessage = "Profile Picture is required.")]
         [Display(Name = "Profile Photo")]
-        public IFormFile PhotoUpload { get; set; }
-    }
-    
-    // Simple model to hold Department data for dropdown population
-    public class StaticDepartmentModel
-    {
-        public long Id { get; set; }
-        public string Name { get; set; }
+        public IFormFile? PhotoUpload { get; set; }
     }
 }

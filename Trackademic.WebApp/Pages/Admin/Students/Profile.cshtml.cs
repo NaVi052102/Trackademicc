@@ -24,7 +24,7 @@ namespace Trackademic.WebApp.Pages.Admin.Students
             StudentRouteId = id;
             
             // Loads static departments for the dropdown
-            LoadDepartments();
+            //LoadDepartments();
 
             // --- Mock Data Setup ---
             Student = id switch
@@ -57,7 +57,7 @@ namespace Trackademic.WebApp.Pages.Admin.Students
         public IActionResult OnPostUpdate()
         {
             // Reload departments for postback validation
-            LoadDepartments();
+            //LoadDepartments();
             
             if (!ModelState.IsValid)
             {
@@ -81,7 +81,7 @@ namespace Trackademic.WebApp.Pages.Admin.Students
         }
         
         // Helper method to load static department data
-        private void LoadDepartments()
+        /*private void LoadDepartments()
         {
             var staticDepartments = new List<StaticDepartmentModel>
             {
@@ -95,7 +95,7 @@ namespace Trackademic.WebApp.Pages.Admin.Students
                 Value = d.Id.ToString(), 
                 Text = d.Name            
             }).ToList();
-        }
+        }*/
     }
 
     // --- ViewModel for the Student Profile Data (Database Aligned) ---
