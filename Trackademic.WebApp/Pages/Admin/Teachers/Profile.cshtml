@@ -1,4 +1,4 @@
-﻿@page
+﻿@page "{id:long}"
 @model Trackademic.WebApp.Pages.Admin.Teachers.ProfileModel
 @{
     Layout = "_AdminLayout";
@@ -6,7 +6,6 @@
 }
 
 <style>
-    /* All your button and icon styles are identical */
     .profile-pic-placeholder {
         width: 150px;
         height: 150px;
@@ -19,11 +18,18 @@
         justify-content: center;
         color: #6c757d;
         font-size: 0.9rem;
+        overflow: hidden;
     }
 
+        .profile-pic-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
     .btn-update-profile {
-        background-color: #6c757d;
-        border-color: #6c757d;
+        background-color: #1b6ec2;
+        border-color: #1b6ec2;
         color: #ffffff;
         border-radius: 150px;
         height: 50px;
@@ -31,14 +37,14 @@
     }
 
         .btn-update-profile:hover {
-            background-color: #28a745;
-            border-color: #28a745;
+            background-color: #155bb5;
+            border-color: #155bb5;
             color: #ffffff;
         }
 
     .btn-discard-changes {
-        background-color: #6c757d;
-        border-color: #6c757d;
+        background-color: #dc3545;
+        border-color: #dc3545;
         color: #ffffff;
         border-radius: 150px;
         height: 50px;
@@ -46,8 +52,8 @@
     }
 
         .btn-discard-changes:hover {
-            background-color: #dc3545;
-            border-color: #dc3545;
+            background-color: #c82333;
+            border-color: #c82333;
         }
 
     .btn-upload-photo {
@@ -58,24 +64,16 @@
     }
 
         .btn-upload-photo:hover {
-            background-color: #28a745;
-            border-color: #28a745;
+            background-color: #5a6268;
+            border-color: #545b62;
             color: #ffffff;
         }
 
-    .card-header .bi {
-        font-size: 1.5rem;
-        vertical-align: middle;
-    }
-
-    /* All your view/edit mode styles are identical */
-    #uploadPhotoContainer,
-    #editActionButtons {
+    #uploadPhotoContainer, #editActionButtons {
         display: none;
     }
 
-    .edit-mode #uploadPhotoContainer,
-    .edit-mode #editActionButtons {
+    .edit-mode #uploadPhotoContainer, .edit-mode #editActionButtons {
         display: block;
     }
 
@@ -95,7 +93,6 @@
 </style>
 
 <div class="row mt-4">
-
     <div class="col-lg-11 mx-auto">
 
         <div class="mb-4">
@@ -111,8 +108,9 @@
             </div>
         }
 
-        @* Ensure you add enctype="multipart/form-data" here when ready for photo upload *@
-        <form method="post" id="profileForm"> 
+        <form method="post" id="profileForm" asp-page-handler="Update" enctype="multipart/form-data">
+            <!-- ID Binding for Backend -->
+            <input type="hidden" asp-for="TargetId" />
 
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
@@ -124,28 +122,24 @@
                     </button>
                 </div>
                 <div class="card-body">
-
                     <div class="text-center mb-3">
-                        <div class="profile-pic-placeholder">
-                            @* Logic to display uploaded image path *@
-                            @if (string.IsNullOrEmpty(Model.Teacher.ProfilePictureUrl))
+                        <div class="profile-pic-placeholder" id="imagePreview">
+                            @if (!string.IsNullOrEmpty(Model.Teacher.ProfilePictureUrl))
                             {
-                                <span>(Profile)</span>
+                                <img src="@Model.Teacher.ProfilePictureUrl" alt="Profile" />
                             }
                             else
                             {
-                                <img src="@Model.Teacher.ProfilePictureUrl" alt="Profile Picture" class="img-fluid rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
+                                <span>(No Photo)</span>
                             }
                         </div>
                         <div id="uploadPhotoContainer">
                             <label for="photoUpload" class="btn btn-sm btn-upload-photo">Upload Photo</label>
-                            @* Binding file input to PhotoUpload IFormFile property *@
-                            <input type="file" id="photoUpload" name="PhotoUpload" class="d-none">
+                            <input type="file" id="photoUpload" asp-for="Teacher.PhotoUpload" class="d-none" accept="image/*" onchange="previewImage(this)">
                         </div>
                     </div>
 
                     <div class="row">
-                        @* SPLIT NAME FIELD *@
                         <div class="col-md-6 mb-3">
                             <label asp-for="Teacher.FirstName" class="form-label"></label>
                             <input type="text" class="form-control" asp-for="Teacher.FirstName">
@@ -194,15 +188,12 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label asp-for="Teacher.TeacherId" class="form-label"></label>
-                            <input type="text" class="form-control" asp-for="Teacher.TeacherId" disabled>
+                            <input type="text" class="form-control" asp-for="Teacher.TeacherId" readonly>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label asp-for="Teacher.DepartmentId" class="form-label">Department</label>
-                            @* Dropdown bound to DepartmentId (Foreign Key) *@
-                            <select class="form-control" 
-                                    asp-for="Teacher.DepartmentId" 
-                                    asp-items="Model.Departments">
-                                <option value="">-- Select Department --</option>
+                            <select class="form-control" asp-for="Teacher.DepartmentId" asp-items="Model.Departments">
+                                <option value="">-- Select --</option>
                             </select>
                             <span asp-validation-for="Teacher.DepartmentId" class="text-danger"></span>
                         </div>
@@ -225,20 +216,22 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label asp-for="Teacher.Role" class="form-label"></label>
-                            <input type="text" class="form-control" asp-for="Teacher.Role" disabled>
+                            <input type="text" class="form-control" asp-for="Teacher.Role" readonly>
                         </div>
                     </div>
 
                     <div id="passwordFields" style="display: none;">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="password" class="form-label">New Password</label>
-                                <input type="password" class="form-control" id="password">
-                                <small class="text-muted">Leave blank to keep current password.</small>
+                                <label asp-for="Teacher.NewPassword" class="form-label"></label>
+                                <!-- FIX: Bound to Teacher.NewPassword -->
+                                <input type="password" class="form-control" asp-for="Teacher.NewPassword" placeholder="Leave blank to keep current">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="confirmPassword" class="form-label">Confirm New Password</label>
-                                <input type="password" class="form-control" id="confirmPassword">
+                                <label asp-for="Teacher.ConfirmNewPassword" class="form-label"></label>
+                                <!-- FIX: Bound to Teacher.ConfirmNewPassword -->
+                                <input type="password" class="form-control" asp-for="Teacher.ConfirmNewPassword">
+                                <span asp-validation-for="Teacher.ConfirmNewPassword" class="text-danger"></span>
                             </div>
                         </div>
                     </div>
@@ -258,19 +251,27 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        $(document).ready(function () {
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var placeholder = document.getElementById('imagePreview');
+                    placeholder.innerHTML = '<img src="' + e.target.result + '" alt="Profile Preview" />';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
 
-            // --- SELECTORS ---
+        $(document).ready(function () {
             const profileForm = $('#profileForm');
             const editProfileBtn = $('#editProfileBtn');
+            const discardChangesBtn = $('#discardChangesBtn');
             const editActionButtons = $('#editActionButtons');
             const uploadPhotoContainer = $('#uploadPhotoContainer');
             const passwordFields = $('#passwordFields');
 
-            // --- JAVASCRIPT UPDATED: Exclude TeacherId and Role (disabled fields) ---
-            const formInputs = profileForm.find('input, textarea, select').not('#teacherId').not('#teacherRole');
+            const formInputs = profileForm.find('input, textarea, select').not('[readonly]').not('[type="hidden"]');
 
-            // --- FUNCTIONS (Standard View/Edit Mode Toggle) ---
             function setViewMode() {
                 formInputs.prop('disabled', true);
                 editProfileBtn.html('<i class="bi bi-pencil"></i> Edit');
@@ -289,26 +290,28 @@
                 profileForm.removeClass('view-mode').addClass('edit-mode');
             }
 
-            // --- PAGE LOAD ---
+            function handleCancelOrDiscard() {
+                if (confirm("Discard changes? Unsaved data will be lost.")) {
+                    location.reload();
+                }
+            }
+
+            // Initialize
             setViewMode();
 
-            // --- CLICK HANDLER ---
             editProfileBtn.on('click', function () {
                 if (profileForm.hasClass('view-mode')) {
                     setEditMode();
                 } else {
-                    if (confirm("Are you sure you want to cancel? Any unsaved changes will be lost.")) {
-                        location.reload();
-                    }
+                    handleCancelOrDiscard();
                 }
             });
 
-            // --- Handle Validation Errors ---
+            discardChangesBtn.on('click', handleCancelOrDiscard);
+
             @if (!ViewContext.ModelState.IsValid)
             {
-                        <text>
-                            setEditMode();
-                        </text>
+                    <text>setEditMode();</text>
             }
         });
     </script>

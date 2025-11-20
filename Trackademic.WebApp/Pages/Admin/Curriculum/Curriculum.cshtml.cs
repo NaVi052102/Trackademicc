@@ -1,18 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using System;
-using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using Trackademic.Data.Data;
+using Trackademic.Data.Models;
 
 namespace Trackademic.WebApp.Pages.Admin.Curriculum
 {
+    // [Authorize(Roles = "Admin")] // Uncomment to secure
     public class CurriculumModel : PageModel
     {
-        // --- Selection State ---
+        private readonly TrackademicDbContext _context;
+
+        public CurriculumModel(TrackademicDbContext context)
+        {
+            _context = context;
+        }
+
+        // --- Selection State (Maintains filter state across reloads) ---
         [BindProperty(SupportsGet = true)] public int SelectedYearId { get; set; }
         [BindProperty(SupportsGet = true)] public int SelectedSemesterId { get; set; }
         [BindProperty(SupportsGet = true)] public int SelectedDepartmentId { get; set; }
@@ -20,9 +27,9 @@ namespace Trackademic.WebApp.Pages.Admin.Curriculum
         [BindProperty(SupportsGet = true)] public int SelectedClassId { get; set; }
 
         // --- Data Lists ---
-        public IList<SchoolYearViewModel> YearList { get; set; }
-        public IList<SemesterViewModel> SemesterList { get; set; }
-        public IList<DepartmentViewModel> DepartmentList { get; set; }
+        public IList<SchoolYearViewModel> YearList { get; set; } = new List<SchoolYearViewModel>();
+        public IList<SemesterViewModel> SemesterList { get; set; } = new List<SemesterViewModel>();
+        public IList<DepartmentViewModel> DepartmentList { get; set; } = new List<DepartmentViewModel>();
         public IList<SubjectViewModel> SubjectList { get; set; } = new List<SubjectViewModel>();
         public IList<ClassViewModel> ClassList { get; set; } = new List<ClassViewModel>();
         public SelectList TeacherOptions { get; set; }
@@ -31,170 +38,303 @@ namespace Trackademic.WebApp.Pages.Admin.Curriculum
         public AssignmentViewModel Assignment { get; set; } = new AssignmentViewModel();
 
         // --- View Models ---
-        public class SchoolYearViewModel { public int Id { get; set; } public string YearName { get; set; } = string.Empty; public DateTime? DateStarted { get; set; } public DateTime? DateEnded { get; set; } }
-        public class SemesterViewModel { public int Id { get; set; } public int SchoolYearId { get; set; } public string SemesterName { get; set; } = string.Empty; public DateTime? DateStarted { get; set; } public DateTime? DateEnded { get; set; } }
-        public class DepartmentViewModel { public int Id { get; set; } public string DeptName { get; set; } = string.Empty; }
-        public class SubjectViewModel { public int Id { get; set; } public int DepartmentId { get; set; } public string SubjectCode { get; set; } = string.Empty; public string SubjectName { get; set; } = string.Empty; }
-        public class ClassViewModel { public int Id { get; set; } public int SubjectId { get; set; } public int SchoolYearId { get; set; } public int SemesterId { get; set; } public string ClassSection { get; set; } = string.Empty; public string AssignedTeacherName { get; set; } = "Unassigned"; public int? AssignedTeacherId { get; set; } }
-        public class AssignmentViewModel { public int ClassId { get; set; } [Required] public int TeacherId { get; set; } }
-        
-        // --- Mock Data ---
-        private static List<SchoolYearViewModel> StaticYears = new List<SchoolYearViewModel> { new SchoolYearViewModel { Id = 1, YearName = "2024-2025", DateStarted = new DateTime(2024, 8, 1), DateEnded = new DateTime(2025, 5, 30) } };
-        private static List<SemesterViewModel> StaticSemesters = new List<SemesterViewModel> { new SemesterViewModel { Id = 10, SchoolYearId = 1, SemesterName = "1st Semester", DateStarted = new DateTime(2024, 8, 1), DateEnded = new DateTime(2024, 12, 20) } };
-        private static List<DepartmentViewModel> StaticDepartments = new List<DepartmentViewModel> { new DepartmentViewModel { Id = 50, DeptName = "Computer Engineering" } };
-        private static List<SubjectViewModel> StaticSubjects = new List<SubjectViewModel> { new SubjectViewModel { Id = 101, DepartmentId = 50, SubjectCode = "CPE 101", SubjectName = "Intro to Programming" } };
-        private static List<ClassViewModel> StaticClasses = new List<ClassViewModel> { new ClassViewModel { Id = 5001, SubjectId = 101, SchoolYearId = 1, SemesterId = 10, ClassSection = "CPE-1A", AssignedTeacherName = "Dr. Smith", AssignedTeacherId = 1 } };
-        
-        public async Task OnGetAsync() { LoadData(); await Task.CompletedTask; }
+        public class SchoolYearViewModel { public long Id { get; set; } public string YearName { get; set; } public DateTime? DateStarted { get; set; } public DateTime? DateEnded { get; set; } }
+        public class SemesterViewModel { public long Id { get; set; } public long SchoolYearId { get; set; } public string SemesterName { get; set; } public DateTime? DateStarted { get; set; } public DateTime? DateEnded { get; set; } }
+        public class DepartmentViewModel { public long Id { get; set; } public string DeptName { get; set; } }
+        public class SubjectViewModel { public long Id { get; set; } public long DepartmentId { get; set; } public string SubjectCode { get; set; } public string SubjectName { get; set; } }
+        public class ClassViewModel { public long Id { get; set; } public long SubjectId { get; set; } public long SchoolYearId { get; set; } public long SemesterId { get; set; } public string ClassSection { get; set; } public string AssignedTeacherName { get; set; } = "Unassigned"; public long? AssignedTeacherId { get; set; } }
+        public class AssignmentViewModel { public long ClassId { get; set; } [Required] public long TeacherId { get; set; } }
 
-        private void LoadData()
+        public async Task OnGetAsync()
         {
-            YearList = StaticYears; 
-            SemesterList = SelectedYearId > 0 ? StaticSemesters.Where(s => s.SchoolYearId == SelectedYearId).ToList() : new List<SemesterViewModel>();
-            DepartmentList = StaticDepartments;
-            SubjectList = SelectedDepartmentId > 0 ? StaticSubjects.Where(s => s.DepartmentId == SelectedDepartmentId).ToList() : new List<SubjectViewModel>();
-            ClassList = (SelectedSubjectId > 0 && SelectedYearId > 0 && SelectedSemesterId > 0) ? StaticClasses.Where(c => c.SubjectId == SelectedSubjectId && c.SchoolYearId == SelectedYearId && c.SemesterId == SelectedSemesterId).ToList() : new List<ClassViewModel>();
-            TeacherOptions = GetMockTeacherOptions();
+            await LoadDataAsync();
+        }
+
+        private async Task LoadDataAsync()
+        {
+            // 1. Years
+            YearList = await _context.Schoolyears
+                .OrderByDescending(y => y.Id)
+                .Select(y => new SchoolYearViewModel
+                {
+                    Id = y.Id,
+                    YearName = y.YearName,
+                    DateStarted = y.DateStarted.HasValue ? y.DateStarted.Value.ToDateTime(TimeOnly.MinValue) : (DateTime?)null,
+                    DateEnded = y.DateEnded.HasValue ? y.DateEnded.Value.ToDateTime(TimeOnly.MinValue) : (DateTime?)null
+                })
+                .ToListAsync();
+
+            // 2. Semesters (Dependent on SelectedYearId)
+            if (SelectedYearId > 0)
+            {
+                SemesterList = await _context.Semesters
+                    .Where(s => s.SchoolYearId == SelectedYearId)
+                    .Select(s => new SemesterViewModel
+                    {
+                        Id = s.Id,
+                        SchoolYearId = s.SchoolYearId,
+                        SemesterName = s.SemesterName,
+                        DateStarted = s.DateStarted.HasValue ? s.DateStarted.Value.ToDateTime(TimeOnly.MinValue) : (DateTime?)null,
+                        DateEnded = s.DateEnded.HasValue ? s.DateEnded.Value.ToDateTime(TimeOnly.MinValue) : (DateTime?)null
+                    })
+                    .ToListAsync();
+            }
+
+            // 3. Departments
+            DepartmentList = await _context.Departments
+                .OrderBy(d => d.DeptName)
+                .Select(d => new DepartmentViewModel { Id = d.Id, DeptName = d.DeptName })
+                .ToListAsync();
+
+            // 4. Subjects (Dependent on SelectedDepartmentId)
+            if (SelectedDepartmentId > 0)
+            {
+                SubjectList = await _context.Subjects
+                    .Where(s => s.DepartmentId == SelectedDepartmentId)
+                    .Select(s => new SubjectViewModel { Id = s.Id, DepartmentId = s.DepartmentId, SubjectCode = s.SubjectCode, SubjectName = s.SubjectName })
+                    .ToListAsync();
+            }
+
+            // 5. Classes (Dependent on Year, Semester, and Subject)
+            if (SelectedYearId > 0 && SelectedSemesterId > 0 && SelectedSubjectId > 0)
+            {
+                // We fetch classes and manually join with ClassAssignments to get the teacher name
+                // Note: Assuming 1 teacher per class for this view
+                var classesData = await _context.Classes
+                    .Where(c => c.SchoolYearId == SelectedYearId && c.SemesterId == SelectedSemesterId && c.SubjectId == SelectedSubjectId)
+                    .Include(c => c.Classassignments)
+                        .ThenInclude(ca => ca.Teacher)
+                    .ToListAsync();
+
+                ClassList = classesData.Select(c =>
+                {
+                    var assignment = c.Classassignments.FirstOrDefault();
+                    return new ClassViewModel
+                    {
+                        Id = c.Id,
+                        SubjectId = c.SubjectId,
+                        SchoolYearId = c.SchoolYearId,
+                        SemesterId = c.SemesterId,
+                        ClassSection = c.ClassSection,
+                        AssignedTeacherId = assignment?.TeacherId,
+                        AssignedTeacherName = assignment != null ? $"{assignment.Teacher.FirstName} {assignment.Teacher.LastName}" : "Unassigned"
+                    };
+                }).ToList();
+            }
+
+            // 6. Teachers for Dropdown
+            var teachers = await _context.Teachers.Select(t => new { t.Id, Name = $"{t.FirstName} {t.LastName}" }).ToListAsync();
+            TeacherOptions = new SelectList(teachers, "Id", "Name");
         }
 
         // ====================================================================
-        // VALIDATION LOGIC (Server-Side)
+        // VALIDATION LOGIC
         // ====================================================================
         private bool IsYearFormatValid(string yearName, DateTime? start, DateTime? end, out string error)
         {
             error = string.Empty;
-            // 1. Regex Format
             if (!Regex.IsMatch(yearName, @"^\d{4}-\d{4}$")) { error = "Format must be YYYY-YYYY."; return false; }
-            
-            // 2. Year Gap
             var parts = yearName.Split('-');
-            int startY = int.Parse(parts[0]);
-            int endY = int.Parse(parts[1]);
-            if (endY != startY + 1) { error = "School Year gap must be exactly 1 year."; return false; }
-
-            // 3. Date Logic
+            if (int.Parse(parts[1]) != int.Parse(parts[0]) + 1) { error = "Year gap must be exactly 1 year."; return false; }
             if (start >= end) { error = "End Date must be after Start Date."; return false; }
-            
-            // 4. Reasonable Date Check (Start date should match the Year Name start)
-            if (start.Value.Year != startY) { error = $"Start Date year ({start.Value.Year}) does not match the Academic Year start ({startY})."; return false; }
-
             return true;
         }
 
         private bool IsTextReasonable(string text, out string error)
         {
             error = string.Empty;
-            if (string.IsNullOrWhiteSpace(text) || text.Trim().Length < 2)
-            {
-                error = "Name/Title must be at least 2 characters long.";
-                return false;
-            }
+            if (string.IsNullOrWhiteSpace(text) || text.Trim().Length < 2) { error = "Name/Title must be at least 2 characters."; return false; }
             return true;
         }
+
+        private object GetRouteData() => new { SelectedYearId, SelectedSemesterId, SelectedDepartmentId, SelectedSubjectId, SelectedClassId };
 
         // ====================================================================
         // HANDLERS
         // ====================================================================
 
         // 1. SCHOOL YEARS
-        public IActionResult OnPostCreateYear(string yearName, DateTime? dateStarted, DateTime? dateEnded)
-        {
-            if (!IsYearFormatValid(yearName, dateStarted, dateEnded, out string err)) { TempData["Error"] = err; return RedirectToPage(GetRouteData()); }
-            
-            int newId = StaticYears.Any() ? StaticYears.Max(y => y.Id) + 1 : 1;
-            StaticYears.Add(new SchoolYearViewModel { Id = newId, YearName = yearName, DateStarted = dateStarted, DateEnded = dateEnded });
-            return RedirectToPage(new { SelectedYearId = newId });
-        }
-        public IActionResult OnPostEditYear(int id, string yearName, DateTime? dateStarted, DateTime? dateEnded)
+        public async Task<IActionResult> OnPostCreateYearAsync(string yearName, DateTime dateStarted, DateTime dateEnded)
         {
             if (!IsYearFormatValid(yearName, dateStarted, dateEnded, out string err)) { TempData["Error"] = err; return RedirectToPage(GetRouteData()); }
 
-            var item = StaticYears.FirstOrDefault(x => x.Id == id);
-            if(item != null) { item.YearName = yearName; item.DateStarted = dateStarted; item.DateEnded = dateEnded; }
+            _context.Schoolyears.Add(new Schoolyear
+            {
+                YearName = yearName,
+                DateStarted = DateOnly.FromDateTime(dateStarted),
+                DateEnded = DateOnly.FromDateTime(dateEnded)
+            });
+            await _context.SaveChangesAsync();
+            TempData["Message"] = "School Year added.";
             return RedirectToPage(GetRouteData());
         }
-        public IActionResult OnPostDeleteYear(int id) { StaticYears.RemoveAll(y => y.Id == id); return RedirectToPage(new { SelectedYearId = 0 }); }
+
+        public async Task<IActionResult> OnPostEditYearAsync(long id, string yearName, DateTime dateStarted, DateTime dateEnded)
+        {
+            if (!IsYearFormatValid(yearName, dateStarted, dateEnded, out string err)) { TempData["Error"] = err; return RedirectToPage(GetRouteData()); }
+
+            var item = await _context.Schoolyears.FindAsync(id);
+            if (item != null)
+            {
+                item.YearName = yearName;
+                item.DateStarted = DateOnly.FromDateTime(dateStarted);
+                item.DateEnded = DateOnly.FromDateTime(dateEnded);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToPage(GetRouteData());
+        }
+
+        public async Task<IActionResult> OnPostDeleteYearAsync(long id)
+        {
+            var item = await _context.Schoolyears.FindAsync(id);
+            if (item != null) { _context.Schoolyears.Remove(item); await _context.SaveChangesAsync(); }
+            return RedirectToPage(new { SelectedYearId = 0 });
+        }
 
         // 2. SEMESTERS
-        public IActionResult OnPostCreateSemester(int schoolYearId, string semesterName, DateTime? dateStarted, DateTime? dateEnded)
+        public async Task<IActionResult> OnPostCreateSemesterAsync(long schoolYearId, string semesterName, DateTime dateStarted, DateTime dateEnded)
         {
             if (!IsTextReasonable(semesterName, out string err)) { TempData["Error"] = err; return RedirectToPage(GetRouteData()); }
-            if (dateStarted >= dateEnded) { TempData["Error"] = "Semester End Date must be after Start Date."; return RedirectToPage(GetRouteData()); }
+            if (dateStarted >= dateEnded) { TempData["Error"] = "End Date must be after Start Date."; return RedirectToPage(GetRouteData()); }
 
-            int newId = StaticSemesters.Any() ? StaticSemesters.Max(s => s.Id) + 1 : 1;
-            StaticSemesters.Add(new SemesterViewModel { Id = newId, SchoolYearId = schoolYearId, SemesterName = semesterName, DateStarted = dateStarted, DateEnded = dateEnded });
-            return RedirectToPage(new { SelectedYearId = schoolYearId, SelectedSemesterId = newId });
-        }
-        public IActionResult OnPostEditSemester(int id, string semesterName, DateTime? dateStarted, DateTime? dateEnded)
-        {
-            if (!IsTextReasonable(semesterName, out string err)) { TempData["Error"] = err; return RedirectToPage(GetRouteData()); }
-            if (dateStarted >= dateEnded) { TempData["Error"] = "Semester End Date must be after Start Date."; return RedirectToPage(GetRouteData()); }
-
-            var item = StaticSemesters.FirstOrDefault(x => x.Id == id);
-            if(item != null) { item.SemesterName = semesterName; item.DateStarted = dateStarted; item.DateEnded = dateEnded; }
+            _context.Semesters.Add(new Semester
+            {
+                SchoolYearId = schoolYearId,
+                SemesterName = semesterName,
+                DateStarted = DateOnly.FromDateTime(dateStarted),
+                DateEnded = DateOnly.FromDateTime(dateEnded)
+            });
+            await _context.SaveChangesAsync();
+            TempData["Message"] = "Semester added.";
             return RedirectToPage(GetRouteData());
         }
-        public IActionResult OnPostDeleteSemester(int id) { StaticSemesters.RemoveAll(s => s.Id == id); return RedirectToPage(new { SelectedYearId, SelectedSemesterId = 0 }); }
+
+        public async Task<IActionResult> OnPostEditSemesterAsync(long id, string semesterName, DateTime dateStarted, DateTime dateEnded)
+        {
+            if (!IsTextReasonable(semesterName, out string err)) { TempData["Error"] = err; return RedirectToPage(GetRouteData()); }
+
+            var item = await _context.Semesters.FindAsync(id);
+            if (item != null)
+            {
+                item.SemesterName = semesterName;
+                item.DateStarted = DateOnly.FromDateTime(dateStarted);
+                item.DateEnded = DateOnly.FromDateTime(dateEnded);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToPage(GetRouteData());
+        }
+
+        public async Task<IActionResult> OnPostDeleteSemesterAsync(long id)
+        {
+            var item = await _context.Semesters.FindAsync(id);
+            if (item != null) { _context.Semesters.Remove(item); await _context.SaveChangesAsync(); }
+            return RedirectToPage(new { SelectedYearId, SelectedSemesterId = 0 });
+        }
 
         // 3. DEPARTMENTS
-        public IActionResult OnPostCreateDepartment(string deptName)
+        public async Task<IActionResult> OnPostCreateDepartmentAsync(string deptName)
         {
             if (!IsTextReasonable(deptName, out string err)) { TempData["Error"] = err; return RedirectToPage(GetRouteData()); }
-            int newId = StaticDepartments.Any() ? StaticDepartments.Max(d => d.Id) + 1 : 1;
-            StaticDepartments.Add(new DepartmentViewModel { Id = newId, DeptName = deptName });
-            return RedirectToPage(new { SelectedYearId, SelectedSemesterId, SelectedDepartmentId = newId });
-        }
-        public IActionResult OnPostEditDepartment(int id, string deptName)
-        {
-            if (!IsTextReasonable(deptName, out string err)) { TempData["Error"] = err; return RedirectToPage(GetRouteData()); }
-            var item = StaticDepartments.FirstOrDefault(x => x.Id == id); if(item != null) { item.DeptName = deptName; }
+
+            _context.Departments.Add(new Department { DeptName = deptName });
+            await _context.SaveChangesAsync();
+            TempData["Message"] = "Department added.";
             return RedirectToPage(GetRouteData());
         }
-        public IActionResult OnPostDeleteDepartment(int id) { StaticDepartments.RemoveAll(d => d.Id == id); return RedirectToPage(new { SelectedYearId, SelectedSemesterId, SelectedDepartmentId = 0 }); }
+
+        public async Task<IActionResult> OnPostEditDepartmentAsync(long id, string deptName)
+        {
+            if (!IsTextReasonable(deptName, out string err)) { TempData["Error"] = err; return RedirectToPage(GetRouteData()); }
+            var item = await _context.Departments.FindAsync(id);
+            if (item != null) { item.DeptName = deptName; await _context.SaveChangesAsync(); }
+            return RedirectToPage(GetRouteData());
+        }
+
+        public async Task<IActionResult> OnPostDeleteDepartmentAsync(long id)
+        {
+            var item = await _context.Departments.FindAsync(id);
+            if (item != null) { _context.Departments.Remove(item); await _context.SaveChangesAsync(); }
+            return RedirectToPage(new { SelectedYearId, SelectedSemesterId, SelectedDepartmentId = 0 });
+        }
 
         // 4. SUBJECTS
-        public IActionResult OnPostCreateSubject(int departmentId, string subjectCode, string subjectName)
+        public async Task<IActionResult> OnPostCreateSubjectAsync(long departmentId, string subjectCode, string subjectName)
         {
-            if (!IsTextReasonable(subjectCode, out string err) || !IsTextReasonable(subjectName, out string err2)) { TempData["Error"] = "Code and Name must be at least 2 characters."; return RedirectToPage(GetRouteData()); }
-            int newId = StaticSubjects.Any() ? StaticSubjects.Max(s => s.Id) + 1 : 1;
-            StaticSubjects.Add(new SubjectViewModel { Id = newId, DepartmentId = departmentId, SubjectCode = subjectCode, SubjectName = subjectName });
-            return RedirectToPage(new { SelectedYearId, SelectedSemesterId, SelectedDepartmentId = departmentId, SelectedSubjectId = newId });
-        }
-        public IActionResult OnPostEditSubject(int id, string subjectCode, string subjectName)
-        {
-            if (!IsTextReasonable(subjectCode, out string err) || !IsTextReasonable(subjectName, out string err2)) { TempData["Error"] = "Code and Name must be at least 2 characters."; return RedirectToPage(GetRouteData()); }
-            var item = StaticSubjects.FirstOrDefault(x => x.Id == id); if(item != null) { item.SubjectCode = subjectCode; item.SubjectName = subjectName; }
+            if (!IsTextReasonable(subjectCode, out string err) || !IsTextReasonable(subjectName, out string err2))
+            { TempData["Error"] = "Code and Name must be valid."; return RedirectToPage(GetRouteData()); }
+
+            _context.Subjects.Add(new Subject { DepartmentId = departmentId, SubjectCode = subjectCode, SubjectName = subjectName });
+            await _context.SaveChangesAsync();
+            TempData["Message"] = "Subject added.";
             return RedirectToPage(GetRouteData());
         }
-        public IActionResult OnPostDeleteSubject(int id) { StaticSubjects.RemoveAll(s => s.Id == id); return RedirectToPage(new { SelectedYearId, SelectedSemesterId, SelectedDepartmentId, SelectedSubjectId = 0 }); }
+
+        public async Task<IActionResult> OnPostEditSubjectAsync(long id, string subjectCode, string subjectName)
+        {
+            var item = await _context.Subjects.FindAsync(id);
+            if (item != null) { item.SubjectCode = subjectCode; item.SubjectName = subjectName; await _context.SaveChangesAsync(); }
+            return RedirectToPage(GetRouteData());
+        }
+
+        public async Task<IActionResult> OnPostDeleteSubjectAsync(long id)
+        {
+            var item = await _context.Subjects.FindAsync(id);
+            if (item != null) { _context.Subjects.Remove(item); await _context.SaveChangesAsync(); }
+            return RedirectToPage(new { SelectedYearId, SelectedSemesterId, SelectedDepartmentId, SelectedSubjectId = 0 });
+        }
 
         // 5. CLASSES
-        public IActionResult OnPostCreateClass(int subjectId, int yearId, int semesterId, string classSection)
+        public async Task<IActionResult> OnPostCreateClassAsync(long subjectId, long yearId, long semesterId, string classSection)
         {
             if (!IsTextReasonable(classSection, out string err)) { TempData["Error"] = err; return RedirectToPage(GetRouteData()); }
-            int newId = StaticClasses.Any() ? StaticClasses.Max(c => c.Id) + 1 : 1;
-            StaticClasses.Add(new ClassViewModel { Id = newId, SubjectId = subjectId, SchoolYearId = yearId, SemesterId = semesterId, ClassSection = classSection, AssignedTeacherName = "Unassigned" });
-            return RedirectToPage(new { SelectedYearId = yearId, SelectedSemesterId = semesterId, SelectedDepartmentId, SelectedSubjectId = subjectId, SelectedClassId = newId });
-        }
-        public IActionResult OnPostEditClass(int id, string classSection)
-        {
-            if (!IsTextReasonable(classSection, out string err)) { TempData["Error"] = err; return RedirectToPage(GetRouteData()); }
-            var item = StaticClasses.FirstOrDefault(x => x.Id == id); if(item != null) { item.ClassSection = classSection; }
+
+            // Ensure uniqueness (Subject + Year + Sem + Section)
+            bool exists = await _context.Classes.AnyAsync(c => c.SubjectId == subjectId && c.SchoolYearId == yearId && c.SemesterId == semesterId && c.ClassSection == classSection);
+            if (exists) { TempData["Error"] = "This class section already exists for this subject/term."; return RedirectToPage(GetRouteData()); }
+
+            _context.Classes.Add(new Class { SubjectId = subjectId, SchoolYearId = yearId, SemesterId = semesterId, ClassSection = classSection });
+            await _context.SaveChangesAsync();
+            TempData["Message"] = "Class added.";
             return RedirectToPage(GetRouteData());
         }
-        public IActionResult OnPostDeleteClass(int id) { StaticClasses.RemoveAll(c => c.Id == id); return RedirectToPage(new { SelectedYearId, SelectedSemesterId, SelectedDepartmentId, SelectedSubjectId, SelectedClassId = 0 }); }
+
+        public async Task<IActionResult> OnPostEditClassAsync(long id, string classSection)
+        {
+            var item = await _context.Classes.FindAsync(id);
+            if (item != null) { item.ClassSection = classSection; await _context.SaveChangesAsync(); }
+            return RedirectToPage(GetRouteData());
+        }
+
+        public async Task<IActionResult> OnPostDeleteClassAsync(long id)
+        {
+            var item = await _context.Classes.FindAsync(id);
+            if (item != null) { _context.Classes.Remove(item); await _context.SaveChangesAsync(); }
+            return RedirectToPage(new { SelectedYearId, SelectedSemesterId, SelectedDepartmentId, SelectedSubjectId, SelectedClassId = 0 });
+        }
 
         // 6. ASSIGN TEACHER
-        public IActionResult OnPostAssignTeacher()
+        public async Task<IActionResult> OnPostAssignTeacherAsync()
         {
             if (Assignment.ClassId == 0 || Assignment.TeacherId == 0) { TempData["Error"] = "Please select a class and a teacher."; return RedirectToPage(GetRouteData()); }
-            var targetClass = StaticClasses.FirstOrDefault(c => c.Id == Assignment.ClassId);
-            var teacherName = GetMockTeacherOptions().FirstOrDefault(t => t.Value == Assignment.TeacherId.ToString())?.Text;
-            if (targetClass != null) { targetClass.AssignedTeacherId = Assignment.TeacherId; targetClass.AssignedTeacherName = teacherName; TempData["Message"] = $"Assigned {teacherName} to {targetClass.ClassSection}"; }
+
+            // Logic: Check if assignment exists. If yes, update. If no, create.
+            var existingAssignment = await _context.Classassignments.FirstOrDefaultAsync(ca => ca.ClassId == Assignment.ClassId);
+
+            if (existingAssignment != null)
+            {
+                // Update existing
+                existingAssignment.TeacherId = Assignment.TeacherId;
+                TempData["Message"] = "Teacher assignment updated.";
+            }
+            else
+            {
+                // Create new
+                _context.Classassignments.Add(new Classassignment { ClassId = Assignment.ClassId, TeacherId = Assignment.TeacherId });
+                TempData["Message"] = "Teacher assigned successfully.";
+            }
+
+            await _context.SaveChangesAsync();
             return RedirectToPage(GetRouteData());
         }
-        
-        private object GetRouteData() { return new { SelectedYearId, SelectedSemesterId, SelectedDepartmentId, SelectedSubjectId, SelectedClassId }; }
-        private SelectList GetMockTeacherOptions() { return new SelectList(new List<(int Id, string Name)> { (1, "Dr. Smith"), (2, "Prof. Johnson"), (3, "Ms. Evans") }, "Id", "Name"); }
     }
 }

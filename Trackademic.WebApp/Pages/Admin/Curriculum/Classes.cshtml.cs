@@ -1,163 +1,258 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Trackademic.Data.Data;
+using Trackademic.Data.Models;
 
-namespace Trackademic.WebApp.Pages.Admin.Curriculum    
+namespace Trackademic.WebApp.Pages.Admin.Curriculum
 {
+    // [Authorize(Roles = "Admin")]
     public class ClassModel : PageModel
     {
-        // --- Filter/Binding Properties ---
-        [BindProperty(SupportsGet = true)] public int SelectedYearId { get; set; }
-        [BindProperty(SupportsGet = true)] public int SelectedSemesterId { get; set; }
-        [BindProperty(SupportsGet = true)] public int SelectedDepartmentId { get; set; }
-        [BindProperty(SupportsGet = true)] public int SelectedSubjectId { get; set; }
-        [BindProperty(SupportsGet = true)] public int SelectedClassId { get; set; } 
+        private readonly TrackademicDbContext _context;
+
+        public ClassModel(TrackademicDbContext context)
+        {
+            _context = context;
+        }
+
+        // --- Filter/Binding Properties (Using IDs) ---
+        [BindProperty(SupportsGet = true)] public long SelectedYearId { get; set; }
+        [BindProperty(SupportsGet = true)] public long SelectedSemesterId { get; set; }
+        [BindProperty(SupportsGet = true)] public long SelectedDepartmentId { get; set; }
+        [BindProperty(SupportsGet = true)] public long SelectedSubjectId { get; set; }
+        [BindProperty(SupportsGet = true)] public long SelectedClassId { get; set; }
 
         // --- Enrollment State ---
         [BindProperty(SupportsGet = true)]
-        public bool IsEnrollmentMode { get; set; } = false; 
+        public bool IsEnrollmentMode { get; set; } = false;
 
         [BindProperty]
         public string StudentSearchTerm { get; set; }
 
         // --- Dropdowns ---
-        public List<SelectListItem> YearOptions { get; set; }
-        public List<SelectListItem> SemesterOptions { get; set; }
-        public List<SelectListItem> DepartmentOptions { get; set; }
-        public List<SelectListItem> SubjectOptions { get; set; }
-        public List<SelectListItem> ClassOptions { get; set; }
+        public List<SelectListItem> YearOptions { get; set; } = new List<SelectListItem>();
+        public List<SelectListItem> SemesterOptions { get; set; } = new List<SelectListItem>();
+        public List<SelectListItem> DepartmentOptions { get; set; } = new List<SelectListItem>();
+        public List<SelectListItem> SubjectOptions { get; set; } = new List<SelectListItem>();
+        public List<SelectListItem> ClassOptions { get; set; } = new List<SelectListItem>();
 
         // --- View Data ---
         public ClassDetailsViewModel SelectedClassDetails { get; set; }
         public List<StudentRosterViewModel> Students { get; set; } = new List<StudentRosterViewModel>();
         public List<StudentRosterViewModel> EnrollmentSearchResults { get; set; } = new List<StudentRosterViewModel>();
 
-        public void OnGet()
+        public async Task OnGetAsync()
         {
-            LoadAllData();
+            await LoadAllDataAsync();
         }
 
         // --- HANDLERS ---
-        public IActionResult OnPostEnrollMode() { LoadAllData(); IsEnrollmentMode = true; return Page(); }
 
-        public IActionResult OnPostSearchStudent()
+        public async Task<IActionResult> OnPostEnrollModeAsync()
         {
-            LoadAllData();
+            await LoadAllDataAsync();
             IsEnrollmentMode = true;
+            return Page();
+        }
+
+        public async Task<IActionResult> OnPostSearchStudentAsync()
+        {
+            await LoadAllDataAsync();
+            IsEnrollmentMode = true;
+
             if (!string.IsNullOrEmpty(StudentSearchTerm))
             {
-                // Mock Search
-                if (StudentSearchTerm.ToLower().Contains("gomez")) EnrollmentSearchResults.Add(new StudentRosterViewModel { StudentId = "S006", FullName = "Gomez, Mark D." });
-                else if (StudentSearchTerm.ToLower().Contains("tan")) EnrollmentSearchResults.Add(new StudentRosterViewModel { StudentId = "T001", FullName = "Tan, Lily A." });
+                string term = StudentSearchTerm.ToLower();
+
+                // Search in Students table
+                var matches = await _context.Students
+                    .Where(s => s.StudentNumber.ToLower().Contains(term)
+                             || s.FirstName.ToLower().Contains(term)
+                             || s.LastName.ToLower().Contains(term))
+                    .Take(10) // Limit results
+                    .Select(s => new StudentRosterViewModel
+                    {
+                        StudentId = s.StudentNumber,
+                        FullName = $"{s.LastName}, {s.FirstName}"
+                    })
+                    .ToListAsync();
+
+                EnrollmentSearchResults = matches;
             }
             return Page();
         }
 
-        public IActionResult OnPostEnrollStudent(string studentIdToEnroll)
+        public async Task<IActionResult> OnPostEnrollStudentAsync(string studentIdToEnroll)
         {
-            TempData["Message"] = $"Student {studentIdToEnroll} enrolled successfully.";
-            return RedirectToPage(new { SelectedYearId, SelectedSemesterId, SelectedDepartmentId, SelectedSubjectId, SelectedClassId });
+            if (SelectedClassId == 0) return RedirectToPage(GetRouteData());
+
+            // 1. Find Student
+            var student = await _context.Students.FirstOrDefaultAsync(s => s.StudentNumber == studentIdToEnroll);
+            if (student == null)
+            {
+                TempData["Message"] = "Student not found.";
+                return RedirectToPage(GetRouteData());
+            }
+
+            // 2. Check if already enrolled
+            bool isEnrolled = await _context.Classenrollments
+                .AnyAsync(e => e.ClassId == SelectedClassId && e.StudentId == student.Id);
+
+            if (isEnrolled)
+            {
+                TempData["Message"] = "Student is already enrolled in this class.";
+            }
+            else
+            {
+                // 3. Enroll
+                var enrollment = new Classenrollment
+                {
+                    ClassId = SelectedClassId,
+                    StudentId = student.Id,
+                    // FIX: Convert DateTime to DateOnly
+                    EnrollmentDate = DateOnly.FromDateTime(DateTime.Now),
+                    EnrollmentStatus = "Enrolled"
+                };
+                _context.Classenrollments.Add(enrollment);
+                await _context.SaveChangesAsync();
+                TempData["Message"] = $"Student {student.FirstName} {student.LastName} enrolled successfully.";
+            }
+
+            return RedirectToPage(GetRouteData());
         }
-        
-        public IActionResult OnPostRemoveStudent(string studentId)
+
+        public async Task<IActionResult> OnPostRemoveStudentAsync(string studentId)
         {
-            TempData["Message"] = $"Student {studentId} removed from class.";
-            return RedirectToPage(new { SelectedYearId, SelectedSemesterId, SelectedDepartmentId, SelectedSubjectId, SelectedClassId });
+            if (SelectedClassId == 0) return RedirectToPage(GetRouteData());
+
+            // 1. Find Student internal ID from String ID
+            var student = await _context.Students.FirstOrDefaultAsync(s => s.StudentNumber == studentId);
+            if (student == null) return RedirectToPage(GetRouteData());
+
+            // 2. Find Enrollment Record
+            var enrollment = await _context.Classenrollments
+                .FirstOrDefaultAsync(e => e.ClassId == SelectedClassId && e.StudentId == student.Id);
+
+            if (enrollment != null)
+            {
+                // 3. Remove
+                // Optional: Check for grades
+                var hasGrades = await _context.Grades.AnyAsync(g => g.EnrollmentId == enrollment.Id);
+                if (hasGrades)
+                {
+                    // If you want to allow soft delete or status change instead:
+                    enrollment.EnrollmentStatus = "Dropped";
+                    _context.Classenrollments.Update(enrollment);
+                    TempData["Message"] = "Student marked as Dropped (Grades preserved).";
+                }
+                else
+                {
+                    // Hard delete if no grades
+                    _context.Classenrollments.Remove(enrollment);
+                    TempData["Message"] = "Student removed from class roster.";
+                }
+
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToPage(GetRouteData());
         }
 
         // --- LOADING HELPERS ---
-        private void LoadAllData()
+        private async Task LoadAllDataAsync()
         {
-            // 1. Load Years (No default selection)
-            YearOptions = GetMockYears().Select(y => new SelectListItem { Value = y.YearID.ToString(), Text = y.YearTitle }).ToList();
+            // 1. Load Years
+            YearOptions = await _context.Schoolyears
+                .OrderByDescending(y => y.Id)
+                .Select(y => new SelectListItem { Value = y.Id.ToString(), Text = y.YearName, Selected = y.Id == SelectedYearId })
+                .ToListAsync();
 
-            // 2. Load Semesters (No default selection)
-            SemesterOptions = GetMockSemesters().Select(s => new SelectListItem { Value = s.SemesterID.ToString(), Text = s.Title }).ToList();
+            // 2. Load Semesters (Dependent on Year)
+            if (SelectedYearId > 0)
+            {
+                SemesterOptions = await _context.Semesters
+                    .Where(s => s.SchoolYearId == SelectedYearId)
+                    .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.SemesterName, Selected = s.Id == SelectedSemesterId })
+                    .ToListAsync();
+            }
 
             // 3. Load Departments
-            LoadDepartmentOptions();
+            DepartmentOptions = await _context.Departments
+                .OrderBy(d => d.DeptName)
+                .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.DeptName, Selected = d.Id == SelectedDepartmentId })
+                .ToListAsync();
 
-            // 4. Load Subjects (Dependent on filters)
-            LoadSubjectOptions();
+            // 4. Load Subjects (Dependent on Department)
+            if (SelectedDepartmentId > 0)
+            {
+                SubjectOptions = await _context.Subjects
+                    .Where(s => s.DepartmentId == SelectedDepartmentId)
+                    .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = $"{s.SubjectCode} - {s.SubjectName}", Selected = s.Id == SelectedSubjectId })
+                    .ToListAsync();
+            }
 
-            // 5. Load Classes (Dependent on filters)
-            LoadClassOptions();
+            // 5. Load Classes (Dependent on Year, Sem, Subject)
+            if (SelectedYearId > 0 && SelectedSemesterId > 0 && SelectedSubjectId > 0)
+            {
+                ClassOptions = await _context.Classes
+                    .Where(c => c.SchoolYearId == SelectedYearId && c.SemesterId == SelectedSemesterId && c.SubjectId == SelectedSubjectId)
+                    .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.ClassSection, Selected = c.Id == SelectedClassId })
+                    .ToListAsync();
+            }
 
-            // 6. Load Details (Only if a class is finally selected)
+            // 6. Load Details & Roster (Only if a class is selected)
             if (SelectedClassId > 0)
             {
-                LoadClassDetails(SelectedClassId);
-                LoadStudentRoster(SelectedClassId);
+                await LoadClassDetailsAsync(SelectedClassId);
+                await LoadStudentRosterAsync(SelectedClassId);
             }
         }
 
-        private void LoadDepartmentOptions()
+        private async Task LoadClassDetailsAsync(long classId)
         {
-            // Only load departments if year/sem are selected (optional logic, but keeps it clean)
-            // For now, we load them always to allow selection
-            var departments = GetMockDepartments();
-            DepartmentOptions = departments.Select(d => new SelectListItem { Value = d.DepartmentID.ToString(), Text = d.Title }).ToList();
-        }
+            var classData = await _context.Classes
+                .Include(c => c.Subject)
+                .Include(c => c.Classassignments)
+                    .ThenInclude(ca => ca.Teacher)
+                .FirstOrDefaultAsync(c => c.Id == classId);
 
-        private void LoadSubjectOptions()
-        {
-            // Requires Year, Sem, and Dept to be selected first
-            if (SelectedYearId == 0 || SelectedSemesterId == 0 || SelectedDepartmentId == 0)
+            if (classData != null)
             {
-                SubjectOptions = new List<SelectListItem>();
-                return;
-            }
+                int count = await _context.Classenrollments.CountAsync(e => e.ClassId == classId);
+                var assignment = classData.Classassignments.FirstOrDefault();
+                string teacherName = assignment != null ? $"{assignment.Teacher.FirstName} {assignment.Teacher.LastName}" : "Unassigned";
 
-            var subjects = GetMockSubjects().Where(s => s.YearID == SelectedYearId && s.SemesterID == SelectedSemesterId && s.DepartmentID == SelectedDepartmentId).ToList();
-            SubjectOptions = subjects.Select(s => new SelectListItem { Value = s.SubjectID.ToString(), Text = $"{s.Code} - {s.Title}" }).ToList();
-        }
-
-        private void LoadClassOptions()
-        {
-            // Requires Subject to be selected
-            if (SelectedSubjectId == 0) 
-            { 
-                ClassOptions = new List<SelectListItem>(); 
-                return; 
-            }
-
-            var classes = GetMockClasses().Where(c => c.SubjectID == SelectedSubjectId).ToList();
-            ClassOptions = classes.Select(c => new SelectListItem { Value = c.ClassID.ToString(), Text = $"{c.SectionName} ({c.Schedule})" }).ToList();
-        }
-        
-        private void LoadClassDetails(int classId)
-        {
-            var classData = GetMockClasses().FirstOrDefault(c => c.ClassID == classId);
-            var subjectData = GetMockSubjects().FirstOrDefault(s => s.SubjectID == classData?.SubjectID);
-
-            if (classData != null && subjectData != null)
-            {
                 SelectedClassDetails = new ClassDetailsViewModel
                 {
-                    SubjectCode = subjectData.Code,
-                    SectionName = classData.SectionName,
-                    CourseTitle = subjectData.Title,
-                    TotalStudents = GetMockStudents().Count(s => s.ClassID == classId),
-                    AssignedTeacher = classData.AssignedTeacher,
-                    // Schedule removed
+                    SubjectCode = classData.Subject.SubjectCode,
+                    SectionName = classData.ClassSection,
+                    CourseTitle = classData.Subject.SubjectName,
+                    TotalStudents = count,
+                    AssignedTeacher = teacherName
                 };
             }
         }
 
-        private void LoadStudentRoster(int classId)
+        private async Task LoadStudentRosterAsync(long classId)
         {
-            Students = GetMockStudents().Where(s => s.ClassID == classId).ToList();
+            Students = await _context.Classenrollments
+                .Include(e => e.Student)
+                .Where(e => e.ClassId == classId && e.EnrollmentStatus == "Enrolled") // Only show active
+                .OrderBy(e => e.Student.LastName)
+                .Select(e => new StudentRosterViewModel
+                {
+                    ClassId = e.ClassId,
+                    StudentId = e.Student.StudentNumber,
+                    FullName = $"{e.Student.LastName}, {e.Student.FirstName}"
+                })
+                .ToListAsync();
         }
-        
-        // --- MODELS & MOCKS ---
-        public class SchoolYearViewModel { public int YearID { get; set; } public string YearTitle { get; set; } }
-        public class SemesterViewModel { public int SemesterID { get; set; } public string Title { get; set; } }
-        public class DepartmentViewModel { public int DepartmentID { get; set; } public string Title { get; set; } }
-        public class SubjectViewModel { public int SubjectID { get; set; } public int YearID { get; set; } public int SemesterID { get; set; } public int DepartmentID { get; set; } public string Code { get; set; } public string Title { get; set; } }
-        public class ClassCardViewModel { public int ClassID { get; set; } public int SubjectID { get; set; } public string SectionName { get; set; } public string Schedule { get; set; } public string AssignedTeacher { get; set; } }
-        
+
+        private object GetRouteData() => new { SelectedYearId, SelectedSemesterId, SelectedDepartmentId, SelectedSubjectId, SelectedClassId };
+
+        // --- VIEW MODELS ---
         public class ClassDetailsViewModel
         {
             public string SubjectCode { get; set; }
@@ -166,24 +261,12 @@ namespace Trackademic.WebApp.Pages.Admin.Curriculum
             public int TotalStudents { get; set; }
             public string AssignedTeacher { get; set; }
         }
-        
-        public class StudentRosterViewModel { public int ClassID { get; set; } public string StudentId { get; set; } public string FullName { get; set; } } 
 
-        private IList<SchoolYearViewModel> GetMockYears() => new List<SchoolYearViewModel> { new SchoolYearViewModel { YearID = 1, YearTitle = "2024-2025" }, new SchoolYearViewModel { YearID = 2, YearTitle = "2023-2024" } };
-        private IList<SemesterViewModel> GetMockSemesters() => new List<SemesterViewModel> { new SemesterViewModel { SemesterID = 10, Title = "1st Semester" }, new SemesterViewModel { SemesterID = 20, Title = "2nd Semester" } };
-        private IList<DepartmentViewModel> GetMockDepartments() => new List<DepartmentViewModel> { new DepartmentViewModel { DepartmentID = 50, Title = "Computer Science" }, new DepartmentViewModel { DepartmentID = 70, Title = "General Education" } };
-        private IList<SubjectViewModel> GetMockSubjects() => new List<SubjectViewModel> { 
-            new SubjectViewModel { SubjectID = 101, YearID = 1, SemesterID = 10, DepartmentID = 50, Code = "CS 101", Title = "Intro to Programming" },
-            new SubjectViewModel { SubjectID = 102, YearID = 1, SemesterID = 10, DepartmentID = 70, Code = "MATH 201", Title = "Calculus I" }
-        };
-        private IList<ClassCardViewModel> GetMockClasses() => new List<ClassCardViewModel> { 
-            new ClassCardViewModel { ClassID = 1001, SubjectID = 101, SectionName = "A-1", Schedule = "MWF 8:00 AM", AssignedTeacher = "Dr. Smith" },
-            new ClassCardViewModel { ClassID = 2001, SubjectID = 102, SectionName = "X-3", Schedule = "MWF 1:00 PM", AssignedTeacher = "Prof. Johnson" }
-        };
-        private IList<StudentRosterViewModel> GetMockStudents() => new List<StudentRosterViewModel> { 
-            new StudentRosterViewModel { ClassID = 1001, StudentId = "S001", FullName = "Cruz, Maria L." },
-            new StudentRosterViewModel { ClassID = 1001, StudentId = "S002", FullName = "Dela Rosa, Jose F." },
-            new StudentRosterViewModel { ClassID = 2001, StudentId = "S005", FullName = "Lim, Kevin C." }
-        };
+        public class StudentRosterViewModel
+        {
+            public long ClassId { get; set; }
+            public string StudentId { get; set; }
+            public string FullName { get; set; }
+        }
     }
 }

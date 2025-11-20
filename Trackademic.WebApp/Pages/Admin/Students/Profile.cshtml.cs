@@ -2,140 +2,203 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using System;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Trackademic.Data.Data;
+using Trackademic.Data.Models;
+using BCrypt.Net;
 
 namespace Trackademic.WebApp.Pages.Admin.Students
 {
     public class ProfileModel : PageModel
     {
+        private readonly TrackademicDbContext _context;
+        private readonly IWebHostEnvironment _environment;
+        private readonly ILogger<ProfileModel> _logger;
+
+        public ProfileModel(
+            TrackademicDbContext context,
+            IWebHostEnvironment environment,
+            ILogger<ProfileModel> logger)
+        {
+            _context = context;
+            _environment = environment;
+            _logger = logger;
+        }
+
         [BindProperty]
         public StudentProfileViewModel Student { get; set; } = new StudentProfileViewModel();
 
-        public int StudentRouteId { get; set; }
+        [BindProperty]
+        public long TargetId { get; set; }
 
-        public List<SelectListItem> Departments { get; set; }
-
-        public IActionResult OnGet(int id)
+        public async Task<IActionResult> OnGetAsync(long id)
         {
-            StudentRouteId = id;
-            
-            // Loads static departments for the dropdown
-            //LoadDepartments();
+            if (id == 0) return RedirectToPage("./Manage");
 
-            // --- Mock Data Setup ---
-            Student = id switch
-            {
-                101 => new StudentProfileViewModel
-                {
-                    FirstName = "Arbien", 
-                    LastName = "Armenion", 
-                    DateOfBirth = new DateTime(2000, 5, 15),
-                    ContactNumber = "09123456789",
-                    Email = "arbien.armenion@example.com",
-                    Address = "123 Main St, Consolacion, Cebu",
-                    StudentId = "TRK-001-2023",
-                    Username = "arbien.m",
-                    Role = "Student"
-                },
-                _ => new StudentProfileViewModel { StudentId = "INVALID" }
-            };
+            TargetId = id;
 
-            if (string.IsNullOrEmpty(Student.FirstName))
+            var studentEntity = await _context.Students
+                .Include(s => s.IdNavigation)
+                .FirstOrDefaultAsync(s => s.Id == id);
+
+            if (studentEntity == null)
             {
                 TempData["Message"] = "Student not found.";
                 TempData["MessageType"] = "danger";
                 return RedirectToPage("./Manage");
             }
 
+            Student = new StudentProfileViewModel
+            {
+                StudentId = studentEntity.StudentNumber,
+                FirstName = studentEntity.FirstName,
+                LastName = studentEntity.LastName,
+
+                // FIX 1: Convert DateOnly? (DB) to DateTime? (ViewModel)
+                DateOfBirth = studentEntity.DateOfBirth.HasValue
+                    ? studentEntity.DateOfBirth.Value.ToDateTime(TimeOnly.MinValue)
+                    : null,
+
+                ContactNumber = studentEntity.ContactNumber,
+                Email = studentEntity.Email,
+                Address = studentEntity.Address,
+                ProfilePictureUrl = studentEntity.ProfilePictureUrl,
+
+                Username = studentEntity.IdNavigation.Username,
+                Role = studentEntity.IdNavigation.UserType
+            };
+
             return Page();
         }
 
-        public IActionResult OnPostUpdate()
+        public async Task<IActionResult> OnPostUpdateAsync()
         {
-            // Reload departments for postback validation
-            //LoadDepartments();
-            
+            if (TargetId == 0) return RedirectToPage("./Manage");
+
             if (!ModelState.IsValid)
             {
-                TempData["Message"] = "Error updating profile. Please check the fields.";
+                TempData["Message"] = "Please correct the errors in the form.";
                 TempData["MessageType"] = "danger";
-                return Page(); 
+                return Page();
             }
 
-            TempData["Message"] = "Profile updated successfully!";
-            TempData["MessageType"] = "success";
+            var studentEntity = await _context.Students
+                .Include(s => s.IdNavigation)
+                .FirstOrDefaultAsync(s => s.Id == TargetId);
 
-            // Redirect to the same page (PRG pattern)
-            return RedirectToPage("./Profile", new { id = StudentRouteId });
-        }
+            if (studentEntity == null) return NotFound();
 
-        public IActionResult OnPostDiscard()
-        {
-            TempData["Message"] = "Changes discarded.";
-            TempData["MessageType"] = "info";
-            return RedirectToPage("./Profile", new { id = StudentRouteId });
-        }
-        
-        // Helper method to load static department data
-        /*private void LoadDepartments()
-        {
-            var staticDepartments = new List<StaticDepartmentModel>
+            if (studentEntity.IdNavigation.Username != Student.Username)
             {
-                new StaticDepartmentModel { Id = 1, Name = "Computer Engineering" },
-                new StaticDepartmentModel { Id = 2, Name = "Electrical Engineering" },
-                new StaticDepartmentModel { Id = 3, Name = "Civil Engineering" },
-            };
+                bool usernameExists = await _context.Users.AnyAsync(u => u.Username == Student.Username && u.Id != TargetId);
+                if (usernameExists)
+                {
+                    ModelState.AddModelError("Student.Username", "Username is taken.");
+                    return Page();
+                }
+            }
 
-            Departments = staticDepartments.Select(d => new SelectListItem 
+            if (Student.PhotoUpload != null)
             {
-                Value = d.Id.ToString(), 
-                Text = d.Name            
-            }).ToList();
-        }*/
+                string uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "students");
+                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+                if (!string.IsNullOrEmpty(studentEntity.ProfilePictureUrl))
+                {
+                    string oldPath = Path.Combine(_environment.WebRootPath, studentEntity.ProfilePictureUrl.TrimStart('/'));
+                    if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
+                }
+
+                string uniqueFileName = Guid.NewGuid().ToString() + "_" + Student.PhotoUpload.FileName;
+                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await Student.PhotoUpload.CopyToAsync(fileStream);
+                }
+
+                studentEntity.ProfilePictureUrl = "/uploads/students/" + uniqueFileName;
+                Student.ProfilePictureUrl = studentEntity.ProfilePictureUrl;
+            }
+
+            studentEntity.FirstName = Student.FirstName;
+            studentEntity.LastName = Student.LastName;
+
+            // FIX 2: Convert DateTime? (ViewModel) to DateOnly? (DB)
+            studentEntity.DateOfBirth = Student.DateOfBirth.HasValue
+                ? DateOnly.FromDateTime(Student.DateOfBirth.Value)
+                : null;
+
+            studentEntity.ContactNumber = Student.ContactNumber;
+            studentEntity.Email = Student.Email;
+            studentEntity.Address = Student.Address;
+
+            studentEntity.IdNavigation.Username = Student.Username;
+
+            if (!string.IsNullOrWhiteSpace(Student.NewPassword))
+            {
+                if (Student.NewPassword != Student.ConfirmNewPassword)
+                {
+                    ModelState.AddModelError("Student.ConfirmNewPassword", "Passwords do not match.");
+                    return Page();
+                }
+                studentEntity.IdNavigation.PasswordHash = BCrypt.Net.BCrypt.HashPassword(Student.NewPassword);
+            }
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                TempData["Message"] = "Profile updated successfully!";
+                TempData["MessageType"] = "success";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating student profile");
+                TempData["Message"] = "Database error occurred.";
+                TempData["MessageType"] = "danger";
+            }
+
+            return RedirectToPage(new { id = TargetId });
+        }
     }
 
-    // --- ViewModel for the Student Profile Data (Database Aligned) ---
     public class StudentProfileViewModel
     {
-        [Required(ErrorMessage = "First Name is required.")]
-        [Display(Name = "First Name")]
-        public string FirstName { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Last Name is required.")]
-        [Display(Name = "Last Name")]
-        public string LastName { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Date of Birth is required.")]
-        [DataType(DataType.Date)]
-        public DateTime DateOfBirth { get; set; }
-
-        [Required(ErrorMessage = "Contact Number is required.")]
-        [Phone]
-        public string ContactNumber { get; set; } = string.Empty;
-        
-        [Required(ErrorMessage = "Email Address is required.")]
-        [EmailAddress]
-        [Display(Name = "Email Address")]
-        public string Email { get; set; } = string.Empty;
-
-        public string Address { get; set; } = string.Empty;
-
         [Required]
         [Display(Name = "Student ID")]
-        public string StudentId { get; set; } = string.Empty;
+        public string StudentId { get; set; }
 
-        [Required(ErrorMessage = "Username is required.")]
-        public string Username { get; set; } = string.Empty;
-        public string Role { get; set; } = string.Empty;
+        [Required]
+        public string FirstName { get; set; }
 
-        public string ProfilePictureUrl { get; set; } = string.Empty;
-        public IFormFile PhotoUpload { get; set; } = default!;
+        [Required]
+        public string LastName { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? DateOfBirth { get; set; }
+
+        [Required]
+        [RegularExpression(@"^\d{11}$", ErrorMessage = "11 digits required")]
+        public string ContactNumber { get; set; }
+
+        [EmailAddress]
+        public string? Email { get; set; }
+
+        public string? Address { get; set; }
+
+        [Required]
+        public string Username { get; set; }
+        public string Role { get; set; }
+
+        [DataType(DataType.Password)]
+        [Display(Name = "New Password")]
+        public string? NewPassword { get; set; }
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm Password")]
+        public string? ConfirmNewPassword { get; set; }
+
+        public string? ProfilePictureUrl { get; set; }
+        public IFormFile? PhotoUpload { get; set; }
     }
-    
-    // Helper model for department dropdown
-    // This MUST BE DELETED if it is a duplicate in your project.
 }

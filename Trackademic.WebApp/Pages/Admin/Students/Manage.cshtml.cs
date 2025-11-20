@@ -1,113 +1,143 @@
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using Trackademic.Data.Data;
+using Trackademic.Data.Models;
 
 namespace Trackademic.WebApp.Pages.Admin.Students
 {
     public class ManageModel : PageModel
     {
+        private readonly TrackademicDbContext _context;
+
+        public ManageModel(TrackademicDbContext context)
+        {
+            _context = context;
+        }
+
         // --- Input Properties for Filtering and Search ---
         [BindProperty(SupportsGet = true)]
         public string SearchTerm { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public string SortBy { get; set; } = "name"; // Default sort by name
+        public string SortBy { get; set; } = "name";
 
         [BindProperty(SupportsGet = true)]
-        public string SchoolYear { get; set; } = "2024-2025"; // Default Year
+        public string SchoolYear { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public string Semester { get; set; } = "Fall"; // Default Semester
+        public string Semester { get; set; }
 
         // Select List options
-        public SelectList SchoolYears { get; } = new SelectList(new[] { "2024-2025", "2023-2024", "2022-2023" });
-        public SelectList Semesters { get; } = new SelectList(new[] { "First", "Second", "Summer" });
+        public SelectList SchoolYears { get; set; }
+        public SelectList Semesters { get; set; }
         public SelectList SortOptions { get; } = new SelectList(new[]
         {
             new { Value = "name", Text = "Full Name" },
             new { Value = "id", Text = "ID Number" },
-            // Removed performance from sort options
             new { Value = "date", Text = "Enrollment Date" }
         }, "Value", "Text");
 
         // --- Data Model ---
-        public IList<StudentAdminViewModel> StudentList { get; set; }
-
-        public class StudentAdminViewModel
-        {
-            public int StudentID { get; set; }
-            public string IDNumber { get; set; }
-            public string FullName { get; set; }
-            
-            // NEW FIELDS for admin view
-            public string Department { get; set; }
-            public string ContactInfo { get; set; } // Email and Contact Number combined/simplified
-            
-            public System.DateTime EnrollmentDate { get; set; }
-            // REMOVED: OverallPerformance
-        }
+        public IList<StudentAdminViewModel> StudentList { get; set; } = new List<StudentAdminViewModel>();
 
         public async Task OnGetAsync()
         {
-            // --- Mock Data Setup ---
-            var mockData = new List<StudentAdminViewModel>
-            {
-                new StudentAdminViewModel
-                {
-                    StudentID = 101,
-                    IDNumber = "S-24-001",
-                    FullName = "Smith, Alice",
-                    Department = "Computer Engineering", // NEW
-                    ContactInfo = "alice@mail.com / 555-1234", // NEW
-                    EnrollmentDate = new DateTime(2023, 09, 01),
-                },
-                new StudentAdminViewModel
-                {
-                    StudentID = 102,
-                    IDNumber = "S-24-002",
-                    FullName = "Johnson, Ben",
-                    Department = "Electrical Engineering", // NEW
-                    ContactInfo = "ben@mail.com / 555-5678", // NEW
-                    EnrollmentDate = new DateTime(2023, 09, 01),
-                },
-                new StudentAdminViewModel
-                {
-                    StudentID = 103,
-                    IDNumber = "S-24-003",
-                    FullName = "Garcia, Clara",
-                    Department = "Civil Engineering", // NEW
-                    ContactInfo = "clara@mail.com / 555-9012", // NEW
-                    EnrollmentDate = new DateTime(2024, 01, 15),
-                }
-            };
+            // 1. Populate Dropdowns
+            var years = await _context.Schoolyears.OrderByDescending(y => y.YearName).Select(y => y.YearName).ToListAsync();
+            var sems = await _context.Semesters.Select(s => s.SemesterName).Distinct().ToListAsync();
 
-            // --- Apply Filtering (Mock Logic) ---
-            IEnumerable<StudentAdminViewModel> filteredList = mockData;
+            SchoolYears = new SelectList(years);
+            Semesters = new SelectList(sems);
 
+            // Set defaults if not provided
+            if (string.IsNullOrEmpty(SchoolYear) && years.Any()) SchoolYear = years.First();
+            if (string.IsNullOrEmpty(Semester) && sems.Any()) Semester = sems.First();
+
+            // 2. Start Query
+            // We include ClassEnrollments to calculate the "Enrollment Date" (earliest class)
+            var query = _context.Students
+                .Include(s => s.Classenrollments)
+                .AsQueryable();
+
+            // 3. Apply Search
             if (!string.IsNullOrEmpty(SearchTerm))
             {
-                filteredList = filteredList.Where(s =>
-                    s.FullName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    s.IDNumber.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    s.Department.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
+                string term = SearchTerm.ToLower();
+                query = query.Where(s =>
+                    s.FirstName.ToLower().Contains(term) ||
+                    s.LastName.ToLower().Contains(term) ||
+                    s.StudentNumber.ToLower().Contains(term) ||
+                    (s.CourseProgram != null && s.CourseProgram.ToLower().Contains(term))
                 );
             }
 
-            // --- Apply Sorting ---
-            filteredList = SortBy switch
+            // 4. Apply Term Filter
+            // "Show students who have at least one class enrolled in this specific Year/Sem"
+            if (!string.IsNullOrEmpty(SchoolYear) && !string.IsNullOrEmpty(Semester))
             {
-                "id" => filteredList.OrderBy(s => s.IDNumber),
-                "date" => filteredList.OrderByDescending(s => s.EnrollmentDate),
-                _ => filteredList.OrderBy(s => s.FullName),
-            };
+                query = query.Where(s => s.Classenrollments.Any(ce =>
+                    ce.Class.SchoolYear.YearName == SchoolYear &&
+                    ce.Class.Semester.SemesterName == Semester
+                ));
+            }
 
-            StudentList = filteredList.ToList();
+            // 5. Apply Sorting
+            switch (SortBy)
+            {
+                case "id":
+                    query = query.OrderBy(s => s.StudentNumber);
+                    break;
+                case "date":
+                    // Sort by the earliest enrollment date found for the student
+                    query = query.OrderByDescending(s => s.Classenrollments.Min(ce => ce.EnrollmentDate));
+                    break;
+                default: // "name"
+                    query = query.OrderBy(s => s.LastName).ThenBy(s => s.FirstName);
+                    break;
+            }
 
-            await Task.CompletedTask;
+            // 6. Execute Query
+            var students = await query.ToListAsync();
+
+            // 7. Map to ViewModel
+            StudentList = students.Select(s => new StudentAdminViewModel
+            {
+                StudentID = s.Id,
+                IDNumber = s.StudentNumber,
+                FullName = $"{s.LastName}, {s.FirstName}",
+
+                // Using the 'CourseProgram' field added in the schema update
+                Department = s.CourseProgram ?? "N/A",
+
+                ContactInfo = FormatContactInfo(s.Email, s.ContactNumber),
+
+                // Determine "Enrollment Date" (Earliest class joined, or Today if none)
+                EnrollmentDate = s.Classenrollments.Any()
+                    ? s.Classenrollments.Min(ce => ce.EnrollmentDate).ToDateTime(TimeOnly.MinValue)
+                    : DateTime.MinValue
+            }).ToList();
+        }
+
+        private string FormatContactInfo(string? email, string? phone)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrEmpty(email)) parts.Add(email);
+            if (!string.IsNullOrEmpty(phone)) parts.Add(phone);
+            return parts.Any() ? string.Join(" / ", parts) : "N/A";
+        }
+
+        public class StudentAdminViewModel
+        {
+            public long StudentID { get; set; }
+            public string IDNumber { get; set; }
+            public string FullName { get; set; }
+
+            public string Department { get; set; }
+            public string ContactInfo { get; set; }
+
+            public DateTime EnrollmentDate { get; set; }
         }
     }
 }
