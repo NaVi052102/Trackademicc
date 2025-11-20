@@ -17,14 +17,14 @@ namespace Trackademic.WebApp.Pages.Teachers
 
         public List<SelectListItem> SchoolYears { get; } = new List<SelectListItem>
         {
-            new SelectListItem { Value = "2930", Text = "2930" },
-            new SelectListItem { Value = "2829", Text = "2829" },
-            new SelectListItem { Value = "2728", Text = "2728" },
-            new SelectListItem { Value = "2627", Text = "2627" },
-            new SelectListItem { Value = "2526", Text = "2526" },
-            new SelectListItem { Value = "2425", Text = "2425" },
-            new SelectListItem { Value = "2324", Text = "2324" },
-            new SelectListItem { Value = "2223", Text = "2223" },
+            new SelectListItem { Value = "2021-2022", Text = "2021-2022" },
+new SelectListItem { Value = "2028-2029", Text = "2028-2029" },
+new SelectListItem { Value = "2027-2028", Text = "2027-2028" },
+new SelectListItem { Value = "2026-2027", Text = "2026-2027" },
+new SelectListItem { Value = "2025-2026", Text = "2025-2026" },
+new SelectListItem { Value = "2024-2025", Text = "2024-2025" },
+new SelectListItem { Value = "2023-2024", Text = "2023-2024" },
+new SelectListItem { Value = "2022-2023", Text = "2022-2023" },
         };
 
         public List<SelectListItem> Semesters { get; } = new List<SelectListItem>

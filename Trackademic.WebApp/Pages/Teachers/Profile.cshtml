@@ -26,23 +26,25 @@
         justify-content: center;
         color: #6c757d;
         font-size: 0.9rem;
+        overflow: hidden; /* Ensure image stays within circle */
     }
 
     /* --- Styles for Buttons and Edit Mode --- */
     .btn-update-profile {
-        background-color: #6c757d;
-        border-color: #6c757d;
+        background-color: #2D586B; /* Brand Color */
+        border-color: #2D586B;
         color: #ffffff;
         border-radius: 150px;
         height: 50px;
         width: 200px;
+        font-weight: 600;
     }
 
-        .btn-update-profile:hover {
-            background-color: #28a745;
-            border-color: #28a745;
-            color: #ffffff;
-        }
+    .btn-update-profile:hover {
+        background-color: #198754; /* Success Green */
+        border-color: #198754;
+        color: #ffffff;
+    }
 
     .btn-discard-changes {
         background-color: #6c757d;
@@ -51,48 +53,60 @@
         border-radius: 150px;
         height: 50px;
         width: 200px;
+        font-weight: 600;
     }
 
-        .btn-discard-changes:hover {
-            background-color: #dc3545;
-            border-color: #dc3545;
-        }
+    .btn-discard-changes:hover {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
     
     .btn-upload-photo {
-        background-color: #6c757d;
-        border-color: #6c757d;
+        background-color: #2D586B;
+        border-color: #2D586B;
         color: #ffffff;
         border-radius: 15px;
+        font-size: 0.8rem;
     }
 
-        .btn-upload-photo:hover {
-            background-color: #28a745;
-            border-color: #28a745;
-            color: #ffffff;
-        }
+    .btn-upload-photo:hover {
+        background-color: #61A39D;
+        border-color: #61A39D;
+        color: #ffffff;
+    }
 
     #uploadPhotoContainer,
     #editActionButtons {
         display: none;
     }
 
+    /* Elements hidden/shown based on mode */
     .edit-mode #uploadPhotoContainer,
-    .edit-mode #editActionButtons {
-        display: block;
-    }
+    .edit-mode #editActionButtons { display: block; }
 
-    .edit-mode #editProfileBtn {
-        display: none;
-    }
+    .edit-mode #editProfileBtn { display: none; }
+    .view-mode #editProfileBtn { display: block; }
 
-    .view-mode #editProfileBtn {
-        display: block;
-    }
-
+    /* Disabled state styling */
     .form-control:disabled {
-        background-color: #e9ecef;
+        background-color: #f8f9fa;
         opacity: 1;
-        cursor: not-allowed;
+        cursor: default;
+        border: 1px solid #dee2e6;
+        color: #495057;
+    }
+
+    /* --- Validation Error Styling --- */
+    .field-validation-error {
+        color: #dc3545;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-top: 4px;
+        display: block;
+    }
+    .input-validation-error {
+        border-color: #dc3545;
+        background-color: #fff8f8;
     }
 </style>
 
@@ -103,154 +117,166 @@
         <div class="col-lg-11 mx-auto">
 
             <div class="mb-4">
+                <h4 style="color: #2D586B; font-weight: 700;">My Profile</h4>
                 <p class="text-muted">View and manage your teacher credentials and account details.</p>
             </div>
 
             @if (TempData["Message"] != null)
             {
-                <div class="alert alert-@TempData["MessageType"] alert-dismissible fade show" role="alert">
+                <div class="alert alert-@TempData["MessageType"] alert-dismissible fade show shadow-sm" role="alert">
                     @TempData["Message"]
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             }
+            
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
-            @* CRUCIAL CHANGE: Added enctype="multipart/form-data" for file upload *@
             <form method="post" id="profileForm" enctype="multipart/form-data"> 
 
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 d-flex align-items-center">
+                <div class="card shadow-sm mb-4 border-0">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+                        <h5 class="mb-0 d-flex align-items-center" style="color: #2D586B; font-weight: 600;">
                             <i class="bi bi-person me-2"></i> Basic Information
                         </h5>
-                        <button type="button" id="editProfileBtn" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-pencil"></i> Edit
+                        <button type="button" id="editProfileBtn" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                            <i class="bi bi-pencil me-1"></i> Edit
                         </button>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
 
-                        <div class="text-center mb-3">
+                        <div class="text-center mb-4">
                             <div class="profile-pic-placeholder">
                                 @if (string.IsNullOrEmpty(Model.ProfilePictureUrl))
                                 {
-                                    <span>(Profile)</span>
+                                    <i class="bi bi-person-fill" style="font-size: 4rem; opacity: 0.5;"></i>
                                 }
                                 else
                                 {
-                                    <img src="@Model.ProfilePictureUrl" alt="Profile Picture" class="img-fluid rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
+                                    <img src="@Model.ProfilePictureUrl" alt="Profile Picture" class="img-fluid w-100 h-100" style="object-fit: cover;">
                                 }
                             </div>
                             <div id="uploadPhotoContainer">
-                                <label for="photoUpload" class="btn btn-sm btn-upload-photo">Upload Photo</label>
-                                @* CRUCIAL CHANGE: Added name="PhotoUpload" to bind to the IFormFile property *@
-                                <input type="file" id="photoUpload" name="PhotoUpload" class="d-none"> 
+                                <label for="photoUpload" class="btn btn-sm btn-upload-photo shadow-sm">
+                                    <i class="bi bi-camera-fill me-1"></i> Change Photo
+                                </label>
+                                <input type="file" id="photoUpload" asp-for="PhotoUpload" class="d-none" accept="image/*"> 
+                                <span asp-validation-for="PhotoUpload" class="text-danger d-block mt-1"></span>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="teacherFirstName" class="form-label">First Name</label>
+                                <label for="teacherFirstName" class="form-label fw-bold">First Name</label>
                                 <input type="text" class="form-control" id="teacherFirstName" asp-for="FirstName">
-                                <span asp-validation-for="FirstName" class="text-danger"></span>
+                                <span asp-validation-for="FirstName"></span>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="teacherLastName" class="form-label">Last Name</label>
+                                <label for="teacherLastName" class="form-label fw-bold">Last Name</label>
                                 <input type="text" class="form-control" id="teacherLastName" asp-for="LastName">
-                                <span asp-validation-for="LastName" class="text-danger"></span>
+                                <span asp-validation-for="LastName"></span>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="teacherDob" class="form-label">Date of Birth</label>
+                                <label for="teacherDob" class="form-label fw-bold">Date of Birth</label>
                                 <input type="date" class="form-control" id="teacherDob" asp-for="DateOfBirth">
-                                <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                                <span asp-validation-for="DateOfBirth"></span>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="teacherContactNumber" class="form-label">Contact Number</label>
-                                <input type="tel" class="form-control" id="teacherContactNumber" asp-for="ContactNumber">
-                                <span asp-validation-for="ContactNumber" class="text-danger"></span>
+                                <label for="teacherContactNumber" class="form-label fw-bold">Contact Number</label>
+                                <input type="tel" class="form-control" id="teacherContactNumber" asp-for="ContactNumber" placeholder="09xxxxxxxxx">
+                                <span asp-validation-for="ContactNumber"></span>
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="teacherEmailAddress" class="form-label">Email Address</label>
+                            <label for="teacherEmailAddress" class="form-label fw-bold">Email Address</label>
                             <input type="email" class="form-control" id="teacherEmailAddress" asp-for="Email">
-                            <span asp-validation-for="Email" class="text-danger"></span>
+                            <span asp-validation-for="Email"></span>
                         </div>
 
                         <div class="mb-3">
-                            <label for="teacherAddress" class="form-label">Address</label>
-                            <textarea class="form-control" id="teacherAddress" rows="3" asp-for="Address"></textarea>
+                            <label for="teacherAddress" class="form-label fw-bold">Address</label>
+                            <textarea class="form-control" id="teacherAddress" rows="2" asp-for="Address"></textarea>
+                            <span asp-validation-for="Address"></span>
                         </div>
                     </div>
                 </div>
 
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-white py-3">
-                        <h5 class="mb-0 d-flex align-items-center">
+                <div class="card shadow-sm mb-4 border-0">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h5 class="mb-0 d-flex align-items-center" style="color: #2D586B; font-weight: 600;">
                             <i class="bi bi-person-vcard me-2"></i> Teacher Details
                         </h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="teacherId" class="form-label">Teacher ID</label>
-                                <input type="text" class="form-control" id="teacherId" asp-for="TeacherId" disabled>
+                                <label for="teacherId" class="form-label fw-bold">Teacher ID</label>
+                                <input type="text" class="form-control bg-light" id="teacherId" asp-for="TeacherId" readonly>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="teacherDepartment" class="form-label">Department</label>
-                                @* DEPARTMENT IS DISABLED - Set by Admin *@
+                                <label for="teacherDepartment" class="form-label fw-bold">Department</label>
                                 <select class="form-control" 
                                         id="teacherDepartment" 
                                         asp-for="DepartmentId" 
-                                        asp-items="@(new SelectList(Model.DepartmentOptions, "Value", "Text"))"
+                                        asp-items="Model.DepartmentOptions"
                                         disabled> 
                                     <option value="">-- Select Department --</option>
                                 </select>
-                                <span asp-validation-for="DepartmentId" class="text-danger"></span>
+                                <small class="text-muted fst-italic">Department is managed by Administrators.</small>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-white py-3">
-                        <h5 class="mb-0 d-flex align-items-center">
+                <div class="card shadow-sm mb-4 border-0">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h5 class="mb-0 d-flex align-items-center" style="color: #2D586B; font-weight: 600;">
                             <i class="bi bi-lock me-2"></i> Account Information
                         </h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="teacherUsername" class="form-label">Username</label>
+                                <label for="teacherUsername" class="form-label fw-bold">Username</label>
                                 <input type="text" class="form-control" id="teacherUsername" asp-for="Username">
-                                <span asp-validation-for="Username" class="text-danger"></span>
+                                <span asp-validation-for="Username"></span>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="teacherRole" class="form-label">Role</label>
-                                <input type="text" class="form-control" id="teacherRole" asp-for="Role" readonly>
+                                <label for="teacherRole" class="form-label fw-bold">Role</label>
+                                <input type="text" class="form-control bg-light" id="teacherRole" asp-for="Role" readonly>
                             </div>
                         </div>
 
                         <div id="passwordFields" style="display: none;">
+                            <hr class="my-4">
+                            <h6 class="text-muted mb-3 text-uppercase small fw-bold">Change Password</h6>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="password" class="form-label">New Password</label>
+                                    <label for="password" class="form-label fw-bold">New Password</label>
                                     <input type="password" class="form-control" id="password" asp-for="NewPassword">
-                                    <small class="text-muted">Leave blank to keep current password.</small>
+                                    <small class="text-muted" style="font-size: 0.75rem;">Min. 6 chars. Leave blank to keep current.</small>
+                                    <span asp-validation-for="NewPassword"></span>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                                    <label for="confirmPassword" class="form-label fw-bold">Confirm New Password</label>
                                     <input type="password" class="form-control" id="confirmPassword" asp-for="ConfirmNewPassword">
+                                    <span asp-validation-for="ConfirmNewPassword"></span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="text-end mb-4" id="editActionButtons">
-                    <button type="submit" asp-page-handler="Discard" class="btn btn-lg btn-discard-changes me-2" formnovalidate>Discard Changes</button>
-                    <button type="submit" asp-page-handler="Update" class="btn btn-lg btn-update-profile">Update Profile</button>
+                <div class="text-end mb-5" id="editActionButtons">
+                    <button type="submit" asp-page-handler="Discard" class="btn btn-lg btn-discard-changes me-2" formnovalidate>
+                        <i class="bi bi-x-circle me-2"></i>Discard
+                    </button>
+                    <button type="submit" asp-page-handler="Update" class="btn btn-lg btn-update-profile shadow">
+                        <i class="bi bi-check-circle-fill me-2"></i>Update Profile
+                    </button>
                 </div>
 
             </form>
@@ -271,13 +297,16 @@
             const uploadPhotoContainer = $('#uploadPhotoContainer');
             const passwordFields = $('#passwordFields');
 
-            // --- JAVASCRIPT: Exclude TeacherId, Role, and the DISABLED Department dropdown ---
-            const formInputs = profileForm.find('input, textarea, select').not('#teacherId').not('#teacherRole').not('#teacherDepartment');
+            // Fields that should NEVER be editable
+            const formInputs = profileForm.find('input, textarea, select')
+                .not('#teacherId')
+                .not('#teacherRole')
+                .not('#teacherDepartment');
 
             // --- FUNCTIONS ---
             function setViewMode() {
                 formInputs.prop('disabled', true);
-                editProfileBtn.html('<i class="bi bi-pencil"></i> Edit');
+                editProfileBtn.html('<i class="bi bi-pencil me-1"></i> Edit');
                 editActionButtons.hide();
                 uploadPhotoContainer.hide();
                 passwordFields.hide();
@@ -286,34 +315,40 @@
 
             function setEditMode() {
                 formInputs.prop('disabled', false); 
-                editProfileBtn.html('<i class="bi bi-x-lg"></i> Cancel');
+                editProfileBtn.html('<i class="bi bi-x-lg me-1"></i> Cancel');
                 editActionButtons.show();
                 uploadPhotoContainer.show();
-                passwordFields.show();
+                passwordFields.slideDown(); // Use slideDown for smoother transition on password fields
                 profileForm.removeClass('view-mode').addClass('edit-mode');
             }
 
             // --- PAGE LOAD ---
-            setViewMode();
+            // Check if there are validation errors from server-side postback
+            @if (!ViewContext.ModelState.IsValid)
+            {
+                <text>
+                    setEditMode(); // If errors exist, stay in Edit Mode
+                </text>
+            }
+            else 
+            {
+                <text>
+                    setViewMode(); // Otherwise, default to View Mode
+                </text>
+            }
 
             // --- CLICK HANDLER ---
             editProfileBtn.on('click', function () {
                 if (profileForm.hasClass('view-mode')) {
                     setEditMode();
                 } else {
+                    // Cancellation logic
                     if (confirm("Are you sure you want to cancel? Any unsaved changes will be lost.")) {
-                        location.reload();
+                         // Reload page to reset form state and clear validation errors
+                        window.location.href = window.location.href;
                     }
                 }
             });
-
-            // --- Handle Validation Errors ---
-            @if (!ViewContext.ModelState.IsValid)
-            {
-                    <text>
-                        setEditMode();
-                    </text>
-            }
         });
     </script>
 }

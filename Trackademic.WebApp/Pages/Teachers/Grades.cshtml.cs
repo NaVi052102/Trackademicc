@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.ComponentModel.DataAnnotations;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -11,35 +12,27 @@ namespace Trackademic.WebApp.Pages.Teachers
         // --- Bind properties ---
         [BindProperty(SupportsGet = true)] public string SchoolYear { get; set; }
         [BindProperty(SupportsGet = true)] public string Semester { get; set; }
-        
-        // Filter only by Class now
         [BindProperty(SupportsGet = true)] public string ClassId { get; set; } 
-        
         [BindProperty(SupportsGet = true)] public string SearchTerm { get; set; }
 
-        // --- Dropdowns ---
         public List<SelectListItem> SchoolYears { get; } = new List<SelectListItem> { new SelectListItem { Value = "2425", Text = "2425", Selected = true }, new SelectListItem { Value = "2324", Text = "2324" } };
         public List<SelectListItem> Semesters { get; } = new List<SelectListItem> { new SelectListItem { Value = "First", Text = "First", Selected = true }, new SelectListItem { Value = "Second", Text = "Second" } };
-        
-        // Available Classes for the specific teacher
         public List<SelectListItem> AvailableClasses { get; set; } = new List<SelectListItem>();
 
-        // --- Grade Data ---
         [BindProperty] public List<GradeEntry> Grades { get; set; } = new List<GradeEntry>();
         
-        // Computed properties for Header display
         public string SubjectDescription { get; set; } 
         public string SubjectDisplayCode { get; set; }
         public string SelectedTermDisplay { get; set; }
 
-
         // --- MOCK DATA ---
+        // Updated: All grade fields are strings to support "INC"
         private static List<GradeEntry> _gradeData = new List<GradeEntry>
         {
-            new GradeEntry { Id = 101, ClassId = "1", StudentIdNumber = "20210001", StudentName = "DELA CRUZ, JUAN P.", Program = "BSCPE", Midterm = "1.5", Final = "1.4", FinalGrade = 1.5, Status = "PASSED" },
-            new GradeEntry { Id = 102, ClassId = "1", StudentIdNumber = "20210002", StudentName = "SANTOS, MARIA D.", Program = "BSCPE", Midterm = "2.0", Final = "2.1", FinalGrade = 2.1, Status = "PASSED" },
-            new GradeEntry { Id = 103, ClassId = "1", StudentIdNumber = "20210008", StudentName = "REYES, MICHAEL A.", Program = "BSCPE", Midterm = "5.0", Final = "5.0", FinalGrade = 5.0, Status = "FAILED" },
-            new GradeEntry { Id = 110, ClassId = "5", StudentIdNumber = "20210010", StudentName = "ESPINA, CARLO G.", Program = "BSCPE", Midterm = "INC", Final = "INC", FinalGrade = 0.0, Status = "INC" }
+            new GradeEntry { Id = 101, ClassId = "1", StudentIdNumber = "20210001", LastName = "DELA CRUZ", FirstName = "JUAN P.", Program = "BSCPE", Midterm = "1.5", Final = "1.4", FinalGrade = "1.5", Status = "PASSED" },
+            new GradeEntry { Id = 102, ClassId = "1", StudentIdNumber = "20210002", LastName = "SANTOS", FirstName = "MARIA D.", Program = "BSCPE", Midterm = "2.0", Final = "2.1", FinalGrade = "2.1", Status = "PASSED" },
+            new GradeEntry { Id = 103, ClassId = "1", StudentIdNumber = "20210008", LastName = "REYES", FirstName = "MICHAEL A.", Program = "BSCPE", Midterm = "5.0", Final = "5.0", FinalGrade = "5.0", Status = "FAILED" },
+            new GradeEntry { Id = 110, ClassId = "5", StudentIdNumber = "20210010", LastName = "ESPINA", FirstName = "CARLO G.", Program = "BSCPE", Midterm = "INC", Final = "INC", FinalGrade = "INC", Status = "INC" }
         };
 
         private static List<(string code, string dept, string title)> _subjectList = new List<(string, string, string)>
@@ -60,18 +53,13 @@ namespace Trackademic.WebApp.Pages.Teachers
             if (string.IsNullOrEmpty(SchoolYear)) SchoolYear = "2425";
             if (string.IsNullOrEmpty(Semester)) Semester = "First";
 
-            // 1. Load all classes available to this teacher (Mock: load all)
-            AvailableClasses = _classList
-                .Select(c => new SelectListItem { Value = c.id, Text = c.section })
-                .ToList();
+            AvailableClasses = _classList.Select(c => new SelectListItem { Value = c.id, Text = c.section }).ToList();
 
-            // 2. Set default ClassId if none selected
             if (string.IsNullOrEmpty(ClassId) && AvailableClasses.Any()) 
                 ClassId = AvailableClasses.First().Value;
 
             SelectedTermDisplay = $"{Semester} Semester, S.Y. {SchoolYear}";
             
-            // 3. Derive Subject info from the Selected Class
             var selectedClass = _classList.FirstOrDefault(c => c.id == ClassId);
             if (selectedClass != default)
             {
@@ -85,46 +73,66 @@ namespace Trackademic.WebApp.Pages.Teachers
                 SubjectDescription = "Select a Class";
             }
 
-            // 4. Filter Grades by ClassId
             var filteredGrades = _gradeData.Where(g => g.ClassId == ClassId);
 
             if (!string.IsNullOrEmpty(SearchTerm)) {
                 string searchLower = SearchTerm.ToLower();
-                filteredGrades = filteredGrades.Where(g => g.StudentName.ToLower().Contains(searchLower) || g.StudentIdNumber.ToLower().Contains(searchLower));
+                filteredGrades = filteredGrades.Where(g => 
+                    g.LastName.ToLower().Contains(searchLower) || 
+                    g.FirstName.ToLower().Contains(searchLower) || 
+                    g.StudentIdNumber.ToLower().Contains(searchLower));
             }
-            Grades = filteredGrades.OrderBy(g => g.StudentName).ToList();
+            
+            Grades = filteredGrades.OrderBy(g => g.LastName).ThenBy(g => g.FirstName).ToList();
         }
 
         public IActionResult OnPostUpdateAll()
         {
             if (!ModelState.IsValid) { OnGet(); return Page(); }
+            
             foreach (var updatedGrade in Grades) {
                 var existingGrade = _gradeData.FirstOrDefault(g => g.Id == updatedGrade.Id);
                 if (existingGrade != null) {
-                    existingGrade.Midterm = updatedGrade.Midterm; existingGrade.Final = updatedGrade.Final; existingGrade.FinalGrade = updatedGrade.FinalGrade; existingGrade.Status = updatedGrade.Status;
+                    existingGrade.Midterm = updatedGrade.Midterm; 
+                    existingGrade.Final = updatedGrade.Final; 
+                    existingGrade.FinalGrade = updatedGrade.FinalGrade; 
+                    existingGrade.Status = updatedGrade.Status;
                 }
             }
-            return RedirectToPage("./Grade", new { SchoolYear, Semester, ClassId, SearchTerm });
+            return RedirectToPage("./Grades", new { SchoolYear, Semester, ClassId, SearchTerm });
         }
 
         public IActionResult OnPostDelete(int id)
         {
             var gradeToRemove = _gradeData.FirstOrDefault(g => g.Id == id);
             if (gradeToRemove != null) _gradeData.Remove(gradeToRemove);
-            return RedirectToPage("./Grade", new { SchoolYear, Semester, ClassId, SearchTerm });
+            return RedirectToPage("./Grades", new { SchoolYear, Semester, ClassId, SearchTerm });
         }
 
         public class GradeEntry
         {
             public int Id { get; set; }
-            // We don't need SubjectCode here anymore for filtering, just ClassId
             public string ClassId { get; set; } 
             public string StudentIdNumber { get; set; }
-            public string StudentName { get; set; }
+            public string LastName { get; set; }
+            public string FirstName { get; set; }
             public string Program { get; set; }
+
+            // --- UPDATED VALIDATION ---
+            // Regex Logic: 
+            // 1. Allows numbers 1.0 to 5.0 (e.g., "1", "1.25", "5.0")
+            // 2. OR allows specific codes "INC", "DROPPED", "UD"
+            // 3. Empty strings are allowed (handled by not making it [Required])
+            
+            [RegularExpression(@"^([1-4](\.\d+)?|5(\.0+)?|INC|DROPPED|UD)$", ErrorMessage = "Enter 1.0-5.0 or INC")]
             public string Midterm { get; set; }
+
+            [RegularExpression(@"^([1-4](\.\d+)?|5(\.0+)?|INC|DROPPED|UD)$", ErrorMessage = "Enter 1.0-5.0 or INC")]
             public string Final { get; set; }
-            public double FinalGrade { get; set; }
+
+            [RegularExpression(@"^([1-4](\.\d+)?|5(\.0+)?|INC|DROPPED|UD)$", ErrorMessage = "Enter 1.0-5.0 or INC")]
+            public string FinalGrade { get; set; }
+            
             public string Status { get; set; }
         }
     }

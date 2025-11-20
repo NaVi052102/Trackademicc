@@ -84,15 +84,24 @@ namespace Trackademic.WebApp.Pages.Teachers
 
             if (!string.IsNullOrEmpty(StudentSearchTerm))
             {
-                // --- SIMULATED SEARCH LOGIC ---
-                if (StudentSearchTerm.ToLower().Contains("gomez"))
+                string term = StudentSearchTerm.ToLower();
+
+                // --- SIMULATED SEARCH LOGIC (UPDATED WITH FIRST/LAST NAMES) ---
+                
+                if (term.Contains("gomez"))
                 {
-                    EnrollmentSearchResults.Add(new StudentRosterViewModel { StudentId = "S006", FullName = "Gomez, Mark D." });
+                    EnrollmentSearchResults.Add(new StudentRosterViewModel { StudentId = "S006", LastName = "Gomez", FirstName = "Mark D." });
                 }
-                else if (StudentSearchTerm.ToLower().Contains("t001"))
+                else if (term.Contains("t001") || term.Contains("tan"))
                 {
-                    EnrollmentSearchResults.Add(new StudentRosterViewModel { StudentId = "T001", FullName = "Tan, Lily A." });
-                    EnrollmentSearchResults.Add(new StudentRosterViewModel { StudentId = "T002", FullName = "Tamayo, Ben R." });
+                    EnrollmentSearchResults.Add(new StudentRosterViewModel { StudentId = "T001", LastName = "Tan", FirstName = "Lily A." });
+                    // Added Tamayo here as well if searching generally
+                    EnrollmentSearchResults.Add(new StudentRosterViewModel { StudentId = "T002", LastName = "Tamayo", FirstName = "Ben R." });
+                }
+                // NEW: Added logic to find a new student
+                else if (term.Contains("rivera") || term.Contains("josh")) 
+                {
+                    EnrollmentSearchResults.Add(new StudentRosterViewModel { StudentId = "N099", LastName = "Rivera", FirstName = "Josh" });
                 }
             }
             return Page();
@@ -102,11 +111,6 @@ namespace Trackademic.WebApp.Pages.Teachers
         public IActionResult OnPostRemoveStudent(string studentIdToRemove)
         {
             // NOTE: This currently relies on static data, so the student will reappear on next load.
-            // In a real application, you would execute: 
-            // 1. A DELETE statement on the 'classenrollment' table where student_id = studentIdToRemove 
-            //    and class_id matches the current class.
-            
-            // For now, we simulate success and redirect back to the roster view
             TempData["Message"] = $"Student ID {studentIdToRemove} successfully removed (simulated).";
             TempData["MessageType"] = "success"; 
             
@@ -117,8 +121,6 @@ namespace Trackademic.WebApp.Pages.Teachers
         public IActionResult OnPostEnrollStudent(string studentIdToEnroll)
         {
             // In a real app, you would execute the INSERT into classenrollment table here.
-            
-            // For now, we simulate success and redirect back to the roster view
             TempData["Message"] = $"Student ID {studentIdToEnroll} successfully enrolled (simulated).";
             TempData["MessageType"] = "success"; 
             
@@ -126,7 +128,7 @@ namespace Trackademic.WebApp.Pages.Teachers
         }
 
 
-        // --- Private Data Loading Methods (Unchanged) ---
+        // --- Private Data Loading Methods ---
         private void LoadAllClassesForDropdown(string year, string semester)
         {
             var allClasses = new List<ClassCardViewModel>();
@@ -155,20 +157,31 @@ namespace Trackademic.WebApp.Pages.Teachers
         {
             if (year == "2425" && semester == "First" && classId == "CPE461-H2")
             {
+                // UPDATED: Populating First Name and Last Name separately
                 Students = new List<StudentRosterViewModel>
                 {
-                    new StudentRosterViewModel { StudentId = "S001", FullName = "Cruz, Maria L." },
-                    new StudentRosterViewModel { StudentId = "S002", FullName = "Dela Rosa, Jose F." },
-                    new StudentRosterViewModel { StudentId = "S003", FullName = "Reyes, Miguel T." },
-                    new StudentRosterViewModel { StudentId = "S004", FullName = "Santos, Anna K." },
-                    new StudentRosterViewModel { StudentId = "S005", FullName = "Lim, Kevin C." }
+                    new StudentRosterViewModel { StudentId = "S001", LastName = "Cruz", FirstName = "Maria L." },
+                    new StudentRosterViewModel { StudentId = "S002", LastName = "Dela Rosa", FirstName = "Jose F." },
+                    new StudentRosterViewModel { StudentId = "S003", LastName = "Reyes", FirstName = "Miguel T." },
+                    new StudentRosterViewModel { StudentId = "S004", LastName = "Santos", FirstName = "Anna K." },
+                    new StudentRosterViewModel { StudentId = "S005", LastName = "Lim", FirstName = "Kevin C." }
                 };
             }
         }
     }
 
-    // --- View Models (Unchanged) ---
+    // --- View Models ---
     public class ClassCardViewModel { public string ClassId { get; set; } public string Title { get; set; } }
     public class ClassDetailsViewModel { public string SubjectCode { get; set; } public string SectionName { get; set; } public string CourseTitle { get; set; } public int TotalStudents { get; set; } }
-    public class StudentRosterViewModel { public string StudentId { get; set; } public string FullName { get; set; } }
+    
+    // UPDATED VIEW MODEL
+    public class StudentRosterViewModel 
+    { 
+        public string StudentId { get; set; } 
+        public string FirstName { get; set; } 
+        public string LastName { get; set; } 
+        
+        // Helper property: This allows your HTML (@student.FullName) to keep working!
+        public string FullName => $"{LastName}, {FirstName}"; 
+    }
 }

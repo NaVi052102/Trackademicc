@@ -9,52 +9,72 @@
     /* --- Layout --- */
     .grades-container { padding: 1.5rem; }
 
-    /* --- Filter Bar --- */
-    .grade-filter-bar {
-        background-color: #f8f9fa;
+    /* --- Filter Box --- */
+    .schedule-filters {
+        padding: 1rem;
+        background-color: #ffffff;
         border: 1px solid #dee2e6;
         border-radius: 8px;
-        padding: 1.5rem;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .btn-set-config {
+        background-color: #2D586B; 
+        border-color: #2D586B;
+        color: #ffffff;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    .btn-set-config:hover {
+        background-color: #61A39D;
+        border-color: #61A39D;
+        color: #ffffff;
+    }
+
+    /* --- Class Selector Bar --- */
+    .class-selection-bar {
+        background-color: #ffffff;
+        border-left: 4px solid #2D586B;
+        border-radius: 4px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         display: flex;
-        flex-direction: column;
+        align-items: center;
         gap: 1rem;
+        flex-wrap: wrap;
+    }
+    .class-select-label {
+        font-weight: 700;
+        color: #2D586B;
+        margin: 0;
+        white-space: nowrap;
     }
 
-    .filter-group { display: flex; align-items: center; gap: 0.5rem; }
-    .select-label { font-weight: 600; margin-right: 0.5rem; white-space: nowrap; color: #495057; }
-
-    /* --- Buttons --- */
-    .btn-apply-filters { background-color: #6c757d; border-color: #6c757d; color: #ffffff; }
-    .btn-apply-filters:hover { background-color: #5a6268; border-color: #545b62; }
-    
-    .btn-save-all {
-        background-color: #198754; /* Green for Teacher Save */
-        border-color: #198754;
-        color: white;
-        min-width: 180px; font-weight: 600; border-radius: 50px;
-    }
-    .btn-save-all:hover { background-color: #157347; }
-
-    /* --- Grade Sheet Table --- */
-    .grade-list-table th {
-        background-color: #6c757d;
-        color: white;
-        vertical-align: middle;
+    /* --- Table Styling --- */
+    .table-modern thead th {
+        background-color: #f8f9fa;
+        color: #2D586B;
         font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-        text-align: center;
+        border-bottom: 2px solid #e9ecef;
         padding: 12px 8px;
+        vertical-align: middle;
+        text-align: center; 
     }
+    /* Left align overrides for Names */
+    .table-modern thead th.text-start-force { text-align: left !important; padding-left: 12px !important; }
     
-    .grade-list-table td {
+    .table-modern tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    .table-modern td {
         vertical-align: middle;
         text-align: center;
         padding: 8px;
     }
-
-    .grade-list-table .text-left { text-align: left; }
+    /* Left align overrides for Names */
+    .table-modern td.text-start-force { text-align: left !important; padding-left: 12px !important; }
 
     /* --- Input Styling --- */
     .table-input {
@@ -65,26 +85,30 @@
         text-align: center;
         font-weight: 600;
         width: 100%;
-        max-width: 80px;
         transition: all 0.2s;
     }
-    
     .table-input:focus {
-        border-color: #86b7fe;
-        background-color: #fff;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        border-color: #61A39D;
+        outline: none;
+        box-shadow: 0 0 0 0.2rem rgba(97, 163, 157, 0.25);
+    }
+    .input-validation-error {
+        border-color: #dc3545;
+        background-color: #fff8f8;
     }
 
     .table-readonly {
         background-color: transparent;
         border: none;
-        color: #495057;
+        color: #212529;
         font-weight: 500;
         cursor: default;
-        text-align: left;
-        padding-left: 0;
+        padding: 0;
+        width: 100%;
     }
-    .table-readonly.text-center { text-align: center; }
+    .table-readonly:focus { outline: none; }
+    
+    .id-text { font-weight: 700; color: #212529; }
 
     /* --- Grade Coloring --- */
     .grade-failing { color: #dc3545; } 
@@ -95,126 +119,171 @@
         font-weight: 700;
         font-size: 0.85rem;
         border-radius: 20px;
-        padding: 4px 24px 4px 12px;
-        width: auto;
+        padding: 4px 28px 4px 12px; 
+        width: 100%; 
         margin: 0 auto;
+        border-color: #dee2e6;
     }
 
-    .search-input { min-width: 250px; }
+    /* --- Save Button --- */
+    .btn-save-all {
+        background-color: #2D586B; 
+        border-color: #2D586B;
+        color: white;
+        min-width: 180px; 
+        font-weight: 600; 
+        border-radius: 50px;
+        transition: all 0.2s;
+    }
+    .btn-save-all:hover { 
+        background-color: #157347;
+        border-color: #157347;
+    }
+
+    /* --- Search Input --- */
+    .search-group { position: relative; }
+    .search-group i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+    .search-control {
+        padding-left: 35px;
+        border-radius: 20px;
+    }
+    .search-control:focus {
+        border-color: #61A39D;
+        box-shadow: 0 0 0 0.2rem rgba(97, 163, 157, 0.25);
+    }
+    
+    .text-danger { font-size: 0.7rem; display: block; margin-top: 2px;}
 </style>
 
-<div class="grades-container">
+<div class="container-fluid pt-3">
 
-    @* --- Filter Bar --- *@
-    <div class="grade-filter-bar">
-        
-        @* Top Row: Academic Period *@
-        <form method="get" class="d-flex flex-wrap align-items-center justify-content-between gap-3 border-bottom pb-3">
-            <div class="d-flex flex-wrap gap-4">
-                <div class="filter-group">
-                    <label class="select-label">Year:</label>
-                    <select asp-for="SchoolYear" asp-items="Model.SchoolYears" class="form-select" style="width: 120px;"></select>
-                </div>
-                <div class="filter-group">
-                    <label class="select-label">Semester:</label>
-                    <select asp-for="Semester" asp-items="Model.Semesters" class="form-select" style="width: 130px;"></select>
-                </div>
+    <div class="schedule-filters">
+        <form method="get" class="d-flex align-items-center">
+            <div class="me-3">
+                <label class="form-label mb-0 me-2"><strong>Academic Year</strong></label>
+                <select asp-for="SchoolYear" asp-items="Model.SchoolYears" class="form-select d-inline-block" style="width: 160px;"></select>
             </div>
-            
-            <button type="submit" class="btn btn-sm btn-apply-filters">
+            <div class="me-3">
+                <label class="form-label mb-0 me-2"><strong>Semester</strong></label>
+                <select asp-for="Semester" asp-items="Model.Semesters" class="form-select d-inline-block" style="width: 160px;"></select>
+            </div>
+            <button type="submit" class="btn btn-set-config btn-sm">
                 <i class="bi bi-arrow-clockwise me-1"></i> Refresh Context
             </button>
         </form>
+    </div>
 
-        @* Bottom Row: Class Selection & Search (Removed Subject Dropdown) *@
-        <form method="get" class="d-flex flex-wrap align-items-center gap-3">
-            @* Hidden fields to preserve top row state *@
+    <div class="class-selection-bar">
+        <form method="get" class="d-flex align-items-center flex-grow-1 gap-3 w-100">
             <input type="hidden" asp-for="SchoolYear" />
             <input type="hidden" asp-for="Semester" />
 
-            <div class="filter-group flex-grow-1">
-                <label class="select-label">Class:</label>
-                <select asp-for="ClassId" asp-items="Model.AvailableClasses" class="form-select w-100" onchange="this.form.submit()">
-                    <option value="">-- Select Class --</option>
+            <div class="d-flex align-items-center flex-grow-1">
+                <label class="class-select-label me-3">
+                    <i class="bi bi-collection-fill me-2"></i>Select Class:
+                </label>
+                <select asp-for="ClassId" asp-items="Model.AvailableClasses" class="form-select" style="max-width: 400px;" onchange="this.form.submit()">
+                    <option value="">-- Select Class to Grade --</option>
                 </select>
             </div>
 
-            <div class="input-group search-input">
-                <input type="text" asp-for="SearchTerm" class="form-control" placeholder="Search Student...">
-                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i></button>
+            <div class="search-group" style="min-width: 250px;">
+                <i class="bi bi-search"></i>
+                <input type="text" id="gradeSearch" class="form-control search-control" placeholder="Search student name or ID...">
             </div>
         </form>
     </div>
+    
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm"></div>
 
     @* --- Grade Sheet Table --- *@
-    <div class="card shadow-sm">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom">
             <h5 class="mb-0 text-dark">
-                <i class="bi bi-journal-bookmark-fill me-2"></i> 
-                @* Subject info is now derived from the selected Class *@
+                <i class="bi bi-journal-bookmark-fill me-2" style="color: #2D586B;"></i> 
                 @if(!string.IsNullOrEmpty(Model.SubjectDisplayCode)) { 
-                    <span class="text-primary fw-bold">@Model.SubjectDisplayCode</span> <span>- @Model.SubjectDescription</span>
+                    <span style="color: #2D586B; font-weight: 700;">@Model.SubjectDisplayCode</span> 
+                    <span class="text-muted">- @Model.SubjectDescription</span>
                 } else { 
-                    <span>Grade Sheet</span> 
+                    <span class="fw-bold">Grade Sheet</span> 
                 }
             </h5>
-            <small class="text-muted fw-bold">@Model.SelectedTermDisplay</small>
+            <span class="badge" style="background-color: #61A39D; font-weight: 500;">@Model.SelectedTermDisplay</span>
         </div>
         
         <div class="card-body p-0">
             <div class="table-responsive">
                 <form method="post" asp-page-handler="UpdateAll">
-                    @* Preserve filters for postback *@
                     <input type="hidden" asp-for="SchoolYear" />
                     <input type="hidden" asp-for="Semester" />
                     <input type="hidden" asp-for="ClassId" />
-                    <input type="hidden" asp-for="SearchTerm" />
 
-                    <table class="table table-hover mb-0 grade-list-table">
+                    <table class="table table-modern mb-0 grade-list-table">
                         <thead>
                             <tr>
-                                <th style="width: 40px;">#</th>
-                                <th style="width: 110px;">ID Number</th>
-                                <th class="text-left">Student Name</th>
-                                <th style="width: 90px;">Program</th>
-                                <th style="width: 90px;">Midterm</th>
-                                <th style="width: 90px;">Final</th>
-                                <th style="width: 90px;">Final Grade</th>
-                                <th style="width: 120px;">Status</th>
+                                <th style="width: 5%;">#</th>
+                                <th style="width: 10%;">ID Number</th>
+                                <th class="text-start-force">Last Name</th>
+                                <th class="text-start-force">First Name</th>
+                                <th style="width: 10%;">Program</th>
+                                <th style="width: 10%;">Midterm</th>
+                                <th style="width: 10%;">Final</th>
+                                <th style="width: 10%;">F. Grade</th>
+                                <th style="width: 13%;">Status</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        
+                        <tbody id="gradeTableBody">
                             @if (Model.Grades.Any())
                             {
                                 @for (int i = 0; i < Model.Grades.Count; i++)
                                 {
                                     var g = Model.Grades[i];
                                     string statusClass = g.Status == "FAILED" ? "status-fail" : (g.Status == "PASSED" ? "status-pass" : "status-inc");
-                                    string gradeColor = g.FinalGrade >= 5.0 ? "grade-failing" : (g.FinalGrade > 0 && g.FinalGrade <= 3.0 ? "grade-passing" : "");
+                                    
+                                    // Logic for grade coloring (parses string to double safely)
+                                    double gradeVal = 0;
+                                    bool isNum = double.TryParse(g.FinalGrade, out gradeVal);
+                                    string gradeColor = (isNum && gradeVal >= 5.0) ? "grade-failing" : ((isNum && gradeVal > 0 && gradeVal <= 3.0) ? "grade-passing" : "");
 
                                     <tr>
                                         <td class="text-muted">@(i + 1)</td>
                                         <input type="hidden" asp-for="Grades[i].Id" />
 
                                         <td>
-                                            <input asp-for="Grades[i].StudentIdNumber" class="table-readonly text-center w-100" readonly />
+                                            <input asp-for="Grades[i].StudentIdNumber" class="table-readonly text-center id-text" readonly />
                                         </td>
-                                        <td class="text-left">
-                                            <input asp-for="Grades[i].StudentName" class="table-readonly w-100 text-start" readonly />
+                                        
+                                        <td class="text-start-force">
+                                            <input asp-for="Grades[i].LastName" class="table-readonly text-start-force" readonly />
                                         </td>
-                                        <td>
-                                            <input asp-for="Grades[i].Program" class="table-readonly text-center w-100" readonly />
+                                        <td class="text-start-force">
+                                            <input asp-for="Grades[i].FirstName" class="table-readonly text-start-force" readonly />
                                         </td>
 
                                         <td>
-                                            <input asp-for="Grades[i].Midterm" class="table-input" placeholder="-" />
+                                            <input asp-for="Grades[i].Program" class="table-readonly text-center" readonly />
+                                        </td>
+
+                                        <td>
+                                            <input asp-for="Grades[i].Midterm" type="text" class="table-input" placeholder="-" />
+                                            <span asp-validation-for="Grades[i].Midterm" class="text-danger"></span>
                                         </td>
                                         <td>
-                                            <input asp-for="Grades[i].Final" class="table-input" placeholder="-" />
+                                            <input asp-for="Grades[i].Final" type="text" class="table-input" placeholder="-" />
+                                            <span asp-validation-for="Grades[i].Final" class="text-danger"></span>
                                         </td>
                                         <td>
-                                            <input asp-for="Grades[i].FinalGrade" type="number" step="0.1" class="table-input @gradeColor" placeholder="0.0" />
+                                            <input asp-for="Grades[i].FinalGrade" type="text" class="table-input @gradeColor" placeholder="-" />
+                                            <span asp-validation-for="Grades[i].FinalGrade" class="text-danger"></span>
                                         </td>
+                                        
                                         <td>
                                             <select asp-for="Grades[i].Status" class="form-select form-select-sm status-select @statusClass">
                                                 <option value="PASSED" class="text-success fw-bold">PASSED</option>
@@ -229,8 +298,8 @@
                             else
                             {
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-5">
-                                        <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+                                    <td colspan="9" class="text-center text-muted py-5">
+                                        <i class="bi bi-inbox display-4 d-block mb-3 opacity-25"></i>
                                         No students found in this class.
                                     </td>
                                 </tr>
@@ -240,9 +309,9 @@
                     
                     @if (Model.Grades.Any())
                     {
-                        <div class="card-footer bg-white p-3 text-end border-top-0">
+                        <div class="card-footer bg-white p-3 text-end border-top">
                             <button type="submit" class="btn btn-save-all shadow-sm">
-                                <i class="bi bi-check-lg me-2"></i> Save Grades
+                                <i class="bi bi-check-circle-fill me-2"></i> Save Grades
                             </button>
                         </div>
                     }
@@ -251,3 +320,37 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        $(document).ready(function () {
+            const $searchInput = $('#gradeSearch');
+            const $tableBody = $('#gradeTableBody');
+
+            // AUTO SEARCH LOGIC
+            $searchInput.on('keyup', function() {
+                const searchTerm = $(this).val().toLowerCase();
+                
+                $tableBody.find('tr').each(function() {
+                    const $row = $(this);
+                    if ($row.find('td[colspan]').length) return;
+
+                    // 1: ID, 2: LastName, 3: FirstName
+                    const idVal = $row.find('td:eq(1) input').val().toLowerCase();
+                    const lastNameVal = $row.find('td:eq(2) input').val().toLowerCase();
+                    const firstNameVal = $row.find('td:eq(3) input').val().toLowerCase();
+
+                    if (idVal.includes(searchTerm) || 
+                        lastNameVal.includes(searchTerm) || 
+                        firstNameVal.includes(searchTerm)) {
+                        $row.show();
+                    } else {
+                        $row.hide();
+                    }
+                });
+            });
+        });
+    </script>
+}
