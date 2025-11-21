@@ -55,7 +55,7 @@ namespace Trackademic.WebApp.Pages.Admin.Students
                 FirstName = studentEntity.FirstName,
                 LastName = studentEntity.LastName,
 
-                // FIX 1: Convert DateOnly? (DB) to DateTime? (ViewModel)
+                // Convert DateOnly? (DB) to DateTime? (ViewModel)
                 DateOfBirth = studentEntity.DateOfBirth.HasValue
                     ? studentEntity.DateOfBirth.Value.ToDateTime(TimeOnly.MinValue)
                     : null,
@@ -89,6 +89,7 @@ namespace Trackademic.WebApp.Pages.Admin.Students
 
             if (studentEntity == null) return NotFound();
 
+            // Duplicate Check (Username)
             if (studentEntity.IdNavigation.Username != Student.Username)
             {
                 bool usernameExists = await _context.Users.AnyAsync(u => u.Username == Student.Username && u.Id != TargetId);
@@ -99,6 +100,7 @@ namespace Trackademic.WebApp.Pages.Admin.Students
                 }
             }
 
+            // Photo Upload
             if (Student.PhotoUpload != null)
             {
                 string uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "students");
@@ -121,10 +123,11 @@ namespace Trackademic.WebApp.Pages.Admin.Students
                 Student.ProfilePictureUrl = studentEntity.ProfilePictureUrl;
             }
 
+            // Update Fields
             studentEntity.FirstName = Student.FirstName;
             studentEntity.LastName = Student.LastName;
 
-            // FIX 2: Convert DateTime? (ViewModel) to DateOnly? (DB)
+            // Convert DateTime? (ViewModel) to DateOnly? (DB)
             studentEntity.DateOfBirth = Student.DateOfBirth.HasValue
                 ? DateOnly.FromDateTime(Student.DateOfBirth.Value)
                 : null;
@@ -132,9 +135,10 @@ namespace Trackademic.WebApp.Pages.Admin.Students
             studentEntity.ContactNumber = Student.ContactNumber;
             studentEntity.Email = Student.Email;
             studentEntity.Address = Student.Address;
-
             studentEntity.IdNavigation.Username = Student.Username;
 
+            // --- OPTIONAL PASSWORD UPDATE LOGIC ---
+            // Only update password if the user typed something in the box
             if (!string.IsNullOrWhiteSpace(Student.NewPassword))
             {
                 if (Student.NewPassword != Student.ConfirmNewPassword)
@@ -142,6 +146,7 @@ namespace Trackademic.WebApp.Pages.Admin.Students
                     ModelState.AddModelError("Student.ConfirmNewPassword", "Passwords do not match.");
                     return Page();
                 }
+                // Hash and update
                 studentEntity.IdNavigation.PasswordHash = BCrypt.Net.BCrypt.HashPassword(Student.NewPassword);
             }
 
@@ -190,6 +195,8 @@ namespace Trackademic.WebApp.Pages.Admin.Students
         public string Username { get; set; }
         public string Role { get; set; }
 
+        // --- Password Fields (OPTIONAL) ---
+        // Note: No [Required] attribute here.
         [DataType(DataType.Password)]
         [Display(Name = "New Password")]
         public string? NewPassword { get; set; }

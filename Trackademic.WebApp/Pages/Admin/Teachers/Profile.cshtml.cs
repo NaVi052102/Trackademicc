@@ -28,11 +28,9 @@ namespace Trackademic.WebApp.Pages.Admin.Teachers
         [BindProperty]
         public TeacherProfileViewModel Teacher { get; set; } = new TeacherProfileViewModel();
 
-        // Stores the ID of the teacher being edited
         [BindProperty]
         public long TargetId { get; set; }
 
-        // Dropdown for Department selection
         public List<SelectListItem> Departments { get; set; } = new List<SelectListItem>();
 
         public async Task<IActionResult> OnGetAsync(long id)
@@ -41,9 +39,8 @@ namespace Trackademic.WebApp.Pages.Admin.Teachers
 
             TargetId = id;
 
-            // 1. Fetch Teacher + User Info
             var teacherEntity = await _context.Teachers
-                .Include(t => t.IdNavigation) // User Table
+                .Include(t => t.IdNavigation)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (teacherEntity == null)
@@ -53,20 +50,18 @@ namespace Trackademic.WebApp.Pages.Admin.Teachers
                 return RedirectToPage("./Manage");
             }
 
-            // 2. Load Departments for Dropdown
             Departments = await _context.Departments
                 .OrderBy(d => d.DeptName)
                 .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.DeptName })
                 .ToListAsync();
 
-            // 3. Map to ViewModel
             Teacher = new TeacherProfileViewModel
             {
                 TeacherId = teacherEntity.TeacherId,
                 FirstName = teacherEntity.FirstName,
                 LastName = teacherEntity.LastName,
 
-                // Convert DateOnly? -> DateTime?
+                // FIX: Convert DateOnly? to DateTime? for the form
                 DateOfBirth = teacherEntity.DateOfBirth.HasValue
                     ? teacherEntity.DateOfBirth.Value.ToDateTime(TimeOnly.MinValue)
                     : null,
@@ -77,7 +72,6 @@ namespace Trackademic.WebApp.Pages.Admin.Teachers
                 DepartmentId = teacherEntity.DepartmentId,
                 ProfilePictureUrl = teacherEntity.ProfilePictureUrl,
 
-                // Account Info
                 Username = teacherEntity.IdNavigation.Username,
                 Role = teacherEntity.IdNavigation.UserType
             };
@@ -91,7 +85,6 @@ namespace Trackademic.WebApp.Pages.Admin.Teachers
 
             if (!ModelState.IsValid)
             {
-                // Reload dropdowns if validation fails
                 Departments = await _context.Departments
                     .OrderBy(d => d.DeptName)
                     .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.DeptName })
@@ -108,8 +101,7 @@ namespace Trackademic.WebApp.Pages.Admin.Teachers
 
             if (teacherEntity == null) return NotFound();
 
-            // 1. Duplicate Checks
-            // Check Username
+            // 1. Duplicate Check (Username)
             if (teacherEntity.IdNavigation.Username != Teacher.Username)
             {
                 bool usernameExists = await _context.Users.AnyAsync(u => u.Username == Teacher.Username && u.Id != TargetId);
@@ -126,7 +118,6 @@ namespace Trackademic.WebApp.Pages.Admin.Teachers
                 string uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "teachers");
                 if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
-                // Delete old photo
                 if (!string.IsNullOrEmpty(teacherEntity.ProfilePictureUrl))
                 {
                     string oldPath = Path.Combine(_environment.WebRootPath, teacherEntity.ProfilePictureUrl.TrimStart('/'));
@@ -148,7 +139,7 @@ namespace Trackademic.WebApp.Pages.Admin.Teachers
             teacherEntity.FirstName = Teacher.FirstName;
             teacherEntity.LastName = Teacher.LastName;
 
-            // Convert DateTime? -> DateOnly?
+            // FIX: Convert DateTime? back to DateOnly?
             teacherEntity.DateOfBirth = Teacher.DateOfBirth.HasValue
                 ? DateOnly.FromDateTime(Teacher.DateOfBirth.Value)
                 : null;
@@ -157,11 +148,10 @@ namespace Trackademic.WebApp.Pages.Admin.Teachers
             teacherEntity.Email = Teacher.Email;
             teacherEntity.Address = Teacher.Address;
             teacherEntity.DepartmentId = Teacher.DepartmentId;
-
-            // Update User Account
             teacherEntity.IdNavigation.Username = Teacher.Username;
 
-            // 4. Password Change
+            // 4. Password Change (OPTIONAL)
+            // Logic: Only change password if the box isn't empty
             if (!string.IsNullOrWhiteSpace(Teacher.NewPassword))
             {
                 if (Teacher.NewPassword != Teacher.ConfirmNewPassword)
@@ -220,16 +210,14 @@ namespace Trackademic.WebApp.Pages.Admin.Teachers
 
         public string? Address { get; set; }
 
-        // Foreign Key
         [Required]
         public long DepartmentId { get; set; }
 
-        // --- Account ---
         [Required]
         public string Username { get; set; }
         public string Role { get; set; }
 
-        // --- Password Change ---
+        // --- Password Fields (OPTIONAL) ---
         [DataType(DataType.Password)]
         [Display(Name = "New Password")]
         public string? NewPassword { get; set; }

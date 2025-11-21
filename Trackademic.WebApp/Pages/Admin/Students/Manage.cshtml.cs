@@ -44,9 +44,16 @@ namespace Trackademic.WebApp.Pages.Admin.Students
 
         public async Task OnGetAsync()
         {
-            // 1. Populate Dropdowns
-            var years = await _context.Schoolyears.OrderByDescending(y => y.YearName).Select(y => y.YearName).ToListAsync();
-            var sems = await _context.Semesters.Select(s => s.SemesterName).Distinct().ToListAsync();
+            // 1. Populate Dropdowns from Database
+            var years = await _context.Schoolyears
+                .OrderByDescending(y => y.YearName)
+                .Select(y => y.YearName)
+                .ToListAsync();
+
+            var sems = await _context.Semesters
+                .Select(s => s.SemesterName)
+                .Distinct()
+                .ToListAsync();
 
             SchoolYears = new SelectList(years);
             Semesters = new SelectList(sems);
@@ -56,9 +63,14 @@ namespace Trackademic.WebApp.Pages.Admin.Students
             if (string.IsNullOrEmpty(Semester) && sems.Any()) Semester = sems.First();
 
             // 2. Start Query
-            // We include ClassEnrollments to calculate the "Enrollment Date" (earliest class)
+            // We include ClassEnrollments to check active status and get enrollment date
             var query = _context.Students
                 .Include(s => s.Classenrollments)
+                    .ThenInclude(ce => ce.Class)
+                        .ThenInclude(c => c.SchoolYear)
+                .Include(s => s.Classenrollments)
+                    .ThenInclude(ce => ce.Class)
+                        .ThenInclude(c => c.Semester)
                 .AsQueryable();
 
             // 3. Apply Search
@@ -73,7 +85,7 @@ namespace Trackademic.WebApp.Pages.Admin.Students
                 );
             }
 
-            // 4. Apply Term Filter
+            // 4. Apply Term Filter (Active Students Only)
             // "Show students who have at least one class enrolled in this specific Year/Sem"
             if (!string.IsNullOrEmpty(SchoolYear) && !string.IsNullOrEmpty(Semester))
             {
@@ -108,12 +120,12 @@ namespace Trackademic.WebApp.Pages.Admin.Students
                 IDNumber = s.StudentNumber,
                 FullName = $"{s.LastName}, {s.FirstName}",
 
-                // Using the 'CourseProgram' field added in the schema update
+                // Using 'CourseProgram' from database
                 Department = s.CourseProgram ?? "N/A",
 
                 ContactInfo = FormatContactInfo(s.Email, s.ContactNumber),
 
-                // Determine "Enrollment Date" (Earliest class joined, or Today if none)
+                // Determine "Enrollment Date" (Earliest class joined, or default min value if none)
                 EnrollmentDate = s.Classenrollments.Any()
                     ? s.Classenrollments.Min(ce => ce.EnrollmentDate).ToDateTime(TimeOnly.MinValue)
                     : DateTime.MinValue
@@ -133,10 +145,8 @@ namespace Trackademic.WebApp.Pages.Admin.Students
             public long StudentID { get; set; }
             public string IDNumber { get; set; }
             public string FullName { get; set; }
-
             public string Department { get; set; }
             public string ContactInfo { get; set; }
-
             public DateTime EnrollmentDate { get; set; }
         }
     }
