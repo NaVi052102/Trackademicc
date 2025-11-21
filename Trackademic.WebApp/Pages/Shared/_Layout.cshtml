@@ -6,37 +6,29 @@
     <title>@ViewData["Title"] - Trackademic</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
 
-    <!-- Links to the separate CSS file we created -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Trackademic.WebApp.styles.css" asp-append-version="true" />
 
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     <header>
-        <!-- The 'navbar-custom' class here applies the styles from site.css -->
         <nav class="navbar navbar-expand-lg navbar-custom sticky-top border-bottom box-shadow mb-3">
             <div class="container-fluid">
 
-                <!-- 1. LEFT SIDE: Logo and Brand Text -->
                 <a class="navbar-brand d-flex align-items-center" asp-area="" asp-page="/Index">
-                    <img src="~/images/trackademic-logo.png" alt="Trackademic Logo" class="logo-img">
+                    <img src="~/images/trackademic-logo.svg" alt="Trackademic Logo" class="logo-img">
                     <span class="brand-text">Trackademic</span>
                 </a>
 
-                <!-- Mobile Toggle Button -->
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
-                <!-- Collapsible Content -->
                 <div class="collapse navbar-collapse" id="navbarContent">
 
-                    <!-- 2. MIDDLE SIDE: Navigation Links -->
-                    <!-- Added 'navbar-center-absolute' class for true centering -->
                     <ul class="navbar-nav mx-auto mb-2 mb-lg-0 navbar-center-absolute">
                         @if (User.Identity.IsAuthenticated)
                         {
@@ -52,21 +44,23 @@
                         }
                     </ul>
 
-                    <!-- 3. RIGHT SIDE: Profile Icon & Dropdown -->
-                    <!-- Added ms-auto to push this section firmly to the right -->
                     <div class="d-flex align-items-center ms-auto">
                         @if (User.Identity.IsAuthenticated)
                         {
                             <div class="dropdown">
-                                <!-- Clickable Profile Trigger (Image Only) -->
-                                <!-- Removed 'dropdown-toggle' class and the chevron icon element -->
                                 <a class="profile-trigger" href="#" role="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                     <img src="~/images/user-profile-logo.svg" alt="Profile" class="profile-img rounded-circle border">
                                 </a>
 
-                                <!-- Dropdown Menu -->
                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="profileDropdown">
                                     <li><h6 class="dropdown-header">Account</h6></li>
+
+                                    <li>
+                                        <a class="dropdown-item" asp-page="/Student/Profile/StudentProfile">
+                                            <i class="bi bi-person me-2"></i> My Profile
+                                        </a>
+                                    </li>
+
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <form class="w-100" asp-page="/Account/Logout" method="post">
@@ -80,7 +74,6 @@
                         }
                         else
                         {
-                            <!-- Fallback Login button if session expires -->
                             <a class="btn btn-outline-secondary btn-sm" asp-page="/Account/Login">Login</a>
                         }
                     </div>

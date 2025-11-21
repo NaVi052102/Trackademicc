@@ -1,24 +1,40 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System;
-using Trackademic.Core.Interfaces; // Assuming this namespace exists
-using Trackademic.Core.Models;      // Assuming this namespace exists
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Trackademic.Data.Data;
 
-namespace Trackademic.Pages.Student
+namespace Trackademic.WebApp.Pages.Student
 {
-    // Class definition for the Enrolled Classes list
+    // Display model for Enrolled Classes
     public class ClassEnrollmentDisplay
     {
         public string SubjectCode { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string FacultyName { get; set; } = string.Empty;
         public int Units { get; set; } = 0;
-        public string ImageUrl { get; set; } = "/images/logo.png";
+        public string ImageUrl { get; set; } = "/images/class-default.png";
+
+        // NEW: Helper to get Initials (e.g. "Data Structures" -> "DS")
+        public string Initials
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(Description)) return "??";
+                var words = Description.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (words.Length >= 2)
+                    return $"{words[0][0]}{words[1][0]}".ToUpper();
+                else
+                    return words[0].Length > 1 ? words[0].Substring(0, 2).ToUpper() : words[0].ToUpper();
+            }
+        }
     }
 
-    // REQUIRED: Class definition for current performance display
+    // Display model for Performance Progress Bars
     public class PerformanceDisplay
     {
         public string SubjectCode { get; set; } = string.Empty;
@@ -29,92 +45,164 @@ namespace Trackademic.Pages.Student
 
     public class StudentDashboardModel : PageModel
     {
-        private readonly IGradeService _gradeService;
+        private readonly TrackademicDbContext _context;
 
-        public StudentDashboardModel(IGradeService gradeService)
+        public StudentDashboardModel(TrackademicDbContext context)
         {
-            _gradeService = gradeService;
+            _context = context;
         }
 
-        // --- PROPERTIES REQUIRED BY THE RAZOR VIEW ---
+        // --- VIEW PROPERTIES ---
+        public Trackademic.Data.Models.Student? CurrentStudent { get; set; }
 
         public decimal CumulativeGPA { get; set; } = 0.0m;
         public int TotalUnitsEarned { get; set; } = 0;
         public int PassedSubjects { get; set; } = 0;
         public int TotalSubjects { get; set; } = 0;
+        public int SubjectsFailed { get; set; } = 0; // Added missing property
 
         public Dictionary<string, decimal> GpaHistory { get; set; } = new();
         public List<ClassEnrollmentDisplay> EnrolledClasses { get; set; } = new();
-
-        // REQUIRED PROPERTY
         public List<PerformanceDisplay> PerformanceData { get; set; } = new();
 
-        // --- PAGE HANDLER AND LOGIC ---
-
-        public void OnGet()
+        // --- MAIN HANDLER ---
+        public async Task<IActionResult> OnGetAsync()
         {
-            LoadCurrentTermClasses();
-            LoadGpaHistory();
-            CalculateCumulativeStatistics();
-            GenerateCurrentPerformanceData();
-        }
-
-        private void GenerateCurrentPerformanceData()
-        {
-            // MOCK data for current semester grades (1.0 - 5.0 scale)
-            var currentGrades = new List<PerformanceDisplay>
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!long.TryParse(userIdString, out long studentId))
             {
-                new PerformanceDisplay { SubjectCode = "CPE331", Description = "Data and Digital Communications", CurrentGrade = 4.5m },
-                new PerformanceDisplay { SubjectCode = "CPE361", Description = "Logic Circuits and Design", CurrentGrade = 3.5m },
-                new PerformanceDisplay { SubjectCode = "ES038", Description = "Technopreneurship", CurrentGrade = 2.0m },
-                new PerformanceDisplay { SubjectCode = "CPE333", Description = "Basic Safety and Health", CurrentGrade = 1.5m },
-                new PerformanceDisplay { SubjectCode = "CPE335", Description = "Feedback and Control Systems", CurrentGrade = 4.0m },
-            };
-
-            foreach (var perf in currentGrades)
-            {
-                // Formula: Percentage = ((Grade - 1.0) / 4.0) * 100 
-                decimal percentage = ((perf.CurrentGrade - 1.0m) / 4.0m) * 100m;
-
-                perf.Percentage = (int)Math.Clamp(Math.Round(percentage), 0, 100);
-
-                PerformanceData.Add(perf);
+                return RedirectToPage("/Account/Login");
             }
+
+            // 1. Fetch Student Info
+            CurrentStudent = await _context.Students.FirstOrDefaultAsync(s => s.Id == studentId);
+            if (CurrentStudent == null) return RedirectToPage("/Account/Login");
+
+            // 2. Load Data
+            await LoadDashboardData(studentId);
+
+            return Page();
         }
 
-        private void LoadCurrentTermClasses()
+        // --- HELPER METHODS ---
+
+        private async Task LoadDashboardData(long studentId)
         {
-            // MOCK DATA for Enrolled Classes 
-            EnrolledClasses = new List<ClassEnrollmentDisplay>
+            // 1. Fetch ALL Enrollments
+            var allEnrollments = await _context.Classenrollments
+                .Where(ce => ce.StudentId == studentId)
+                .Include(ce => ce.Class).ThenInclude(c => c.Subject)
+                .Include(ce => ce.Class).ThenInclude(c => c.SchoolYear)
+                .Include(ce => ce.Class).ThenInclude(c => c.Semester)
+                .Include(ce => ce.Class).ThenInclude(c => c.Classassignments).ThenInclude(ca => ca.Teacher)
+                .Include(ce => ce.Grade)
+                .ToListAsync();
+
+            // A. CALCULATE CUMULATIVE STATS
+            decimal totalGradePoints = 0;
+            int totalUnitsForGpa = 0;
+            PassedSubjects = 0;
+            SubjectsFailed = 0;
+            TotalUnitsEarned = 0;
+
+            // Count Total Subjects (Exclude 'Enrolled')
+            TotalSubjects = allEnrollments.Count(e => e.EnrollmentStatus != "Enrolled");
+
+            foreach (var enrollment in allEnrollments)
             {
-                new ClassEnrollmentDisplay { SubjectCode = "CPE331", Description = "Data and Digital Communications", FacultyName = "SEMBLANTE, J. N.", Units = 3 },
-                new ClassEnrollmentDisplay { SubjectCode = "CPE361", Description = "Logic Circuits and Design", FacultyName = "CORTES, S. G.", Units = 4 },
-                new ClassEnrollmentDisplay { SubjectCode = "ES038", Description = "Technopreneurship", FacultyName = "BARRIOQUINTO, E. M.", Units = 3 },
-                new ClassEnrollmentDisplay { SubjectCode = "CPE333", Description = "Basic Safety and Health", FacultyName = "ALFEREZ, N.", Units = 3 },
-                new ClassEnrollmentDisplay { SubjectCode = "CPE335", Description = "Feedback and Control Systems", FacultyName = "TAMPUS, M. J.", Units = 3 },
-            };
-        }
+                if (enrollment.EnrollmentStatus == "Enrolled") continue;
 
-        private void CalculateCumulativeStatistics()
-        {
-            // MOCK Cumulative Data
-            CumulativeGPA = 4.12m;
-            TotalUnitsEarned = 78;
-            PassedSubjects = 18;
-            TotalSubjects = 20;
-        }
+                int units = enrollment.Class.Subject.CreditUnits ?? 3;
 
+                if (enrollment.Grade != null && enrollment.Grade.FinalGrade.HasValue)
+                {
+                    decimal grade = enrollment.Grade.FinalGrade.Value;
+                    totalGradePoints += (grade * units);
+                    totalUnitsForGpa += units;
 
-        private void LoadGpaHistory()
-        {
-            // UPDATED MOCK GPA HISTORY: Uses School Year and Semester Number
-            GpaHistory = new Dictionary<string, decimal>
+                    if (grade <= 3.0m)
+                    {
+                        PassedSubjects++;
+                        TotalUnitsEarned += units;
+                    }
+                    else
+                    {
+                        SubjectsFailed++;
+                    }
+                }
+            }
+
+            if (totalUnitsForGpa > 0)
             {
-                { "2022-2023 - 2nd Semester", 3.75m },
-                { "2023-2024 - 1st Semester", 3.90m },
-                { "2023-2024 - 2nd Semester", 4.05m },
-                { "2024-2025 - 1st Semester", 4.12m }
-            };
+                CumulativeGPA = totalGradePoints / totalUnitsForGpa;
+            }
+
+            // B. GPA HISTORY
+            var groupedByTerm = allEnrollments
+                .Where(e => e.EnrollmentStatus != "Enrolled")
+                .GroupBy(e => new { Year = e.Class.SchoolYear.YearName, Sem = e.Class.Semester.SemesterName })
+                .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Sem);
+
+            foreach (var term in groupedByTerm)
+            {
+                decimal termPoints = 0;
+                int termUnits = 0;
+
+                foreach (var item in term)
+                {
+                    if (item.Grade != null && item.Grade.FinalGrade.HasValue)
+                    {
+                        int u = item.Class.Subject.CreditUnits ?? 3;
+                        termPoints += (item.Grade.FinalGrade.Value * u);
+                        termUnits += u;
+                    }
+                }
+
+                if (termUnits > 0)
+                {
+                    string key = $"{term.Key.Year} - {term.Key.Sem}";
+                    if (!GpaHistory.ContainsKey(key))
+                    {
+                        GpaHistory.Add(key, termPoints / termUnits);
+                    }
+                }
+            }
+
+            // C. CURRENT/LATEST ENROLLMENTS LIST
+            var latestEnrollments = allEnrollments
+                .OrderByDescending(e => e.Class.SchoolYear.YearName)
+                .ThenByDescending(e => e.Class.Semester.Id)
+                .Take(5)
+                .ToList();
+
+            EnrolledClasses = latestEnrollments.Select(e => new ClassEnrollmentDisplay
+            {
+                SubjectCode = e.Class.Subject.SubjectCode ?? "N/A",
+                Description = e.Class.Subject.SubjectName ?? "Unknown",
+                Units = e.Class.Subject.CreditUnits ?? 0,
+                FacultyName = e.Class.Classassignments.FirstOrDefault()?.Teacher?.LastName ?? "TBA",
+                ImageUrl = "/images/class-default.png"
+            }).ToList();
+
+            // D. PERFORMANCE DATA
+            foreach (var item in latestEnrollments)
+            {
+                if (item.Grade != null && item.Grade.FinalGrade.HasValue)
+                {
+                    decimal g = item.Grade.FinalGrade.Value;
+                    int percent = (int)((5.0m - g) / 4.0m * 100m);
+                    if (percent < 0) percent = 0;
+                    if (percent > 100) percent = 100;
+
+                    PerformanceData.Add(new PerformanceDisplay
+                    {
+                        SubjectCode = item.Class.Subject.SubjectCode ?? "N/A",
+                        Description = item.Class.Subject.SubjectName ?? "Unknown",
+                        CurrentGrade = g,
+                        Percentage = percent
+                    });
+                }
+            }
         }
     }
 }

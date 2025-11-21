@@ -1,178 +1,136 @@
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using System;
-using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
-using System.Threading.Tasks;
+using System.Security.Claims;
+using Trackademic.Data.Data;
+using Trackademic.Data.Models;
 
 namespace Trackademic.WebApp.Pages.Teachers
 {
+    [Authorize(Roles = "Teacher")]
     public class ProfileModel : PageModel
     {
-        // --- 1. Profile Properties with Strict Validation ---
+        private readonly TrackademicDbContext _context;
+        private readonly IWebHostEnvironment _environment; // Helper for server paths
 
-        [BindProperty]
-        [Required(ErrorMessage = "First Name is required.")]
-        [StringLength(50, ErrorMessage = "First Name cannot exceed 50 characters.")]
-        [RegularExpression(@"^[a-zA-Z\s.\-']+$", ErrorMessage = "First Name can only contain letters, spaces, periods, or hyphens.")]
-        public string FirstName { get; set; }
-
-        [BindProperty]
-        [Required(ErrorMessage = "Last Name is required.")]
-        [StringLength(50, ErrorMessage = "Last Name cannot exceed 50 characters.")]
-        [RegularExpression(@"^[a-zA-Z\s.\-']+$", ErrorMessage = "Last Name can only contain letters, spaces, periods, or hyphens.")]
-        public string LastName { get; set; }
-
-        [BindProperty]
-        [Required(ErrorMessage = "Date of Birth is required.")]
-        [DataType(DataType.Date)]
-        [CustomAgeValidation(18, ErrorMessage = "You must be at least 18 years old.")] // Custom Attribute below
-        public DateTime? DateOfBirth { get; set; }
-
-        [BindProperty]
-        [Required(ErrorMessage = "Contact Number is required.")]
-        [RegularExpression(@"^(09|\+639)\d{9}$", ErrorMessage = "Invalid format. Use 09xxxxxxxxx or +639xxxxxxxxx")]
-        public string ContactNumber { get; set; }
-
-        [BindProperty]
-        [Required(ErrorMessage = "Email Address is required.")]
-        [EmailAddress(ErrorMessage = "Invalid Email Address format.")]
-        public string Email { get; set; }
-
-        [BindProperty]
-        [Required(ErrorMessage = "Address is required.")]
-        [StringLength(200, ErrorMessage = "Address cannot exceed 200 characters.")]
-        public string Address { get; set; }
-
-        // --- 2. Teacher Details (Read Only / Admin Set) ---
-        [BindProperty] public string TeacherId { get; set; } // Readonly
-        [BindProperty] public string DepartmentId { get; set; } // Disabled Dropdown
-        public List<SelectListItem> DepartmentOptions { get; set; } = new List<SelectListItem>(); 
-
-        // --- 3. Account Information ---
-        [BindProperty]
-        [Required(ErrorMessage = "Username is required.")]
-        [StringLength(20, MinimumLength = 4, ErrorMessage = "Username must be between 4 and 20 characters.")]
-        [RegularExpression(@"^[a-zA-Z0-9_.]+$", ErrorMessage = "Username can only contain letters, numbers, underscores, and dots.")]
-        public string Username { get; set; }
-
-        [BindProperty] public string Role { get; set; } // Readonly
-
-        // --- 4. Password Management ---
-        [BindProperty]
-        [DataType(DataType.Password)]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters long.")]
-        public string NewPassword { get; set; }
-
-        [BindProperty]
-        [DataType(DataType.Password)]
-        [Compare("NewPassword", ErrorMessage = "The new password and confirmation password do not match.")]
-        public string ConfirmNewPassword { get; set; }
-
-        // --- 5. File Upload ---
-        [BindProperty]
-        public IFormFile PhotoUpload { get; set; }
-        public string ProfilePictureUrl { get; set; }
-
-        // ==============================================================
-
-        public void OnGet()
+        public ProfileModel(TrackademicDbContext context, IWebHostEnvironment environment)
         {
-            LoadMockData();
+            _context = context;
+            _environment = environment;
         }
 
-        public async Task<IActionResult> OnPostUpdateAsync()
+        [BindProperty]
+        public TeacherProfileViewModel TeacherProfile { get; set; } = new TeacherProfileViewModel();
+
+        [TempData]
+        public string Message { get; set; }
+
+        [TempData]
+        public string MessageType { get; set; }
+
+        public async Task<IActionResult> OnGetAsync()
         {
-            // 1. Check Model State
-            if (!ModelState.IsValid)
+            string userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!long.TryParse(userIdStr, out long userId))
             {
-                // Reload dropdowns or auxiliary data if validation fails
-                LoadDepartmentOptions();
-                // Return Page to show errors
-                TempData["Message"] = "Please correct the errors highlighted below.";
-                TempData["MessageType"] = "danger";
-                return Page();
+                return RedirectToPage("/Account/Login");
             }
 
-            // 2. Handle File Upload (Simulated)
-            if (PhotoUpload != null)
+            var teacher = await _context.Teachers
+                .Include(t => t.Department)
+                .FirstOrDefaultAsync(t => t.Id == userId);
+
+            if (teacher == null) return RedirectToPage("/Account/Login");
+
+            TeacherProfile = new TeacherProfileViewModel
             {
-                // Validation: Check file size (e.g., max 2MB)
-                if (PhotoUpload.Length > 2 * 1024 * 1024)
-                {
-                    ModelState.AddModelError("PhotoUpload", "File size cannot exceed 2MB.");
-                    LoadDepartmentOptions();
-                    return Page();
-                }
-                // In real app: Save file to wwwroot/uploads and update DB path
-            }
+                TeacherId = teacher.TeacherId,
+                FirstName = teacher.FirstName,
+                LastName = teacher.LastName,
+                Email = teacher.Email,
+                Department = teacher.Department?.DeptName ?? "N/A",
+                DateOfBirth = teacher.DateOfBirth,
+                ProfilePictureUrl = teacher.ProfilePictureUrl, // Load existing image URL
 
-            // 3. Handle Password Change
-            if (!string.IsNullOrEmpty(NewPassword))
-            {
-                // Logic to hash and update password
-            }
-
-            // 4. Save Changes to DB (Simulated)
-            TempData["Message"] = "Profile updated successfully!";
-            TempData["MessageType"] = "success";
-
-            // Redirect to self to clear post data and return to View Mode
-            return RedirectToPage();
-        }
-
-        public IActionResult OnPostDiscard()
-        {
-            return RedirectToPage();
-        }
-
-        // --- Helpers ---
-        private void LoadMockData()
-        {
-            // Simulate fetching from DB
-            FirstName = "Maria";
-            LastName = "Dela Cruz";
-            DateOfBirth = new DateTime(1985, 8, 15);
-            ContactNumber = "09171234567";
-            Email = "maria.delacruz@school.edu";
-            Address = "123 Sampaguita St., Cebu City";
-            TeacherId = "T-2023-001";
-            DepartmentId = "1"; // Matches Dept Options
-            Username = "maria.teacher";
-            Role = "Teacher";
-            ProfilePictureUrl = ""; // Empty for now
-
-            LoadDepartmentOptions();
-        }
-
-        private void LoadDepartmentOptions()
-        {
-            DepartmentOptions = new List<SelectListItem>
-            {
-                new SelectListItem { Value = "1", Text = "Computer Engineering" },
-                new SelectListItem { Value = "2", Text = "Electrical Engineering" },
-                new SelectListItem { Value = "3", Text = "General Education" }
+                ContactNumber = teacher.ContactNumber,
+                Address = teacher.Address
             };
+
+            return Page();
         }
 
-        // --- Custom Age Validation Attribute ---
-        public class CustomAgeValidation : ValidationAttribute
+        public async Task<IActionResult> OnPostAsync()
         {
-            private int _minAge;
-            public CustomAgeValidation(int minAge) { _minAge = minAge; }
-            protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+            // Note: We don't check !ModelState.IsValid strictly here because PhotoUpload is optional
+
+            string userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!long.TryParse(userIdStr, out long userId)) return RedirectToPage("/Account/Login");
+
+            var teacher = await _context.Teachers.FindAsync(userId);
+            if (teacher == null) return NotFound();
+
+            // --- FILE UPLOAD LOGIC ---
+            if (TeacherProfile.PhotoUpload != null)
             {
-                if (value == null) return ValidationResult.Success;
-                DateTime dob = (DateTime)value;
-                int age = DateTime.Today.Year - dob.Year;
-                if (dob > DateTime.Today.AddYears(-age)) age--;
-                
-                if (age < _minAge) return new ValidationResult(ErrorMessage);
-                return ValidationResult.Success;
+                // 1. Create "uploads" folder if it doesn't exist
+                string uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                // 2. Generate unique filename (e.g., T-2025-001_guid.jpg)
+                string uniqueFileName = $"{teacher.TeacherId}_{Guid.NewGuid()}{Path.GetExtension(TeacherProfile.PhotoUpload.FileName)}";
+                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                // 3. Save file to server
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await TeacherProfile.PhotoUpload.CopyToAsync(fileStream);
+                }
+
+                // 4. Update Database Path
+                teacher.ProfilePictureUrl = "/uploads/" + uniqueFileName;
             }
+
+            // Update other fields
+            teacher.ContactNumber = TeacherProfile.ContactNumber;
+            teacher.Address = TeacherProfile.Address;
+
+            await _context.SaveChangesAsync();
+
+            Message = "Profile updated successfully.";
+            MessageType = "success";
+
+            return RedirectToPage();
         }
+    }
+
+    public class TeacherProfileViewModel
+    {
+        public string TeacherId { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string Email { get; set; }
+        public string Department { get; set; }
+
+        public string? ProfilePictureUrl { get; set; } // Stores the URL string
+
+        [Display(Name = "Upload Photo")]
+        public IFormFile? PhotoUpload { get; set; } // Handles the actual file upload
+
+        [DataType(DataType.Date)]
+        public DateOnly? DateOfBirth { get; set; }
+
+        [Required(ErrorMessage = "Contact Number is required")]
+        [Phone]
+        [Display(Name = "Contact Number")]
+        public string? ContactNumber { get; set; }
+
+        [Required(ErrorMessage = "Address is required")]
+        [Display(Name = "Home Address")]
+        public string? Address { get; set; }
     }
 }

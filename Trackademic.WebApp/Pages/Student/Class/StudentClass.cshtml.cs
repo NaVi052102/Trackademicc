@@ -1,14 +1,26 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Trackademic.Data.Data;
 
 namespace Trackademic.WebApp.Pages.Student
 {
     public class StudentClassModel : PageModel
     {
-        // --- Properties for Dropdowns ---
+        private readonly TrackademicDbContext _context;
+
+        public StudentClassModel(TrackademicDbContext context)
+        {
+            _context = context;
+        }
+
+        // --- Filter Properties ---
         [BindProperty(SupportsGet = true)]
         public string SchoolYear { get; set; } = string.Empty;
 
@@ -16,64 +28,139 @@ namespace Trackademic.WebApp.Pages.Student
         public string Semester { get; set; } = string.Empty;
 
         [BindProperty(SupportsGet = true)]
-        public string Status { get; set; } = string.Empty;
+        public string SearchTerm { get; set; } = string.Empty; // Added Search Term
 
-        // --- UPDATED SCHOOL YEAR LIST ---
-        public List<SelectListItem> SchoolYears { get; } = new List<SelectListItem>
-        {
-            new SelectListItem { Value = "2930", Text = "2930" },
-            new SelectListItem { Value = "2829", Text = "2829" },
-            new SelectListItem { Value = "2728", Text = "2728" },
-            new SelectListItem { Value = "2627", Text = "2627" },
-            new SelectListItem { Value = "2526", Text = "2526" },
-            new SelectListItem { Value = "2425", Text = "2425" },
-            new SelectListItem { Value = "2324", Text = "2324" },
-            new SelectListItem { Value = "2223", Text = "2223" },
-        };
+        // --- Dropdowns ---
+        public List<SelectListItem> SchoolYears { get; set; } = new List<SelectListItem>();
+        public List<SelectListItem> Semesters { get; set; } = new List<SelectListItem>();
 
-        public List<SelectListItem> Semesters { get; } = new List<SelectListItem>
-        {
-            new SelectListItem { Value = "First", Text = "First" },
-            new SelectListItem { Value = "Second", Text = "Second" },
-            new SelectListItem { Value = "Summer", Text = "Summer" },
-        };
-
-        public List<SelectListItem> Statuses { get; } = new List<SelectListItem>
-        {
-            new SelectListItem { Value = "Enrolled", Text = "Enrolled" },
-            new SelectListItem { Value = "Completed", Text = "Completed" },
-            new SelectListItem { Value = "Dropped", Text = "Dropped" },
-        };
-
-        // --- Data for the Class Cards ---
+        // --- Data ---
         public List<ClassCardViewModel> Classes { get; set; } = new List<ClassCardViewModel>();
 
-        public void OnGet()
+        public async Task<IActionResult> OnGetAsync()
         {
-            if (string.IsNullOrEmpty(SchoolYear)) SchoolYear = "2425";
-            if (string.IsNullOrEmpty(Semester)) Semester = "First";
-            if (string.IsNullOrEmpty(Status)) Status = "Enrolled";
-
-            // --- MOCK DATA NOW INCLUDES INSTRUCTOR NAME ---
-            Classes = new List<ClassCardViewModel>
+            // 1. Get Logged-in Student ID
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!long.TryParse(userIdString, out long studentId))
             {
-                new ClassCardViewModel { Title = "Embedded Systems", StudentCount = 40, ImageUrl = "/images/logo.png", InstructorName = "Dr. Allan Turing" },
-                new ClassCardViewModel { Title = "Data Structures", StudentCount = 45, ImageUrl = "/images/logo.png", InstructorName = "Prof. Grace Hopper" },
-                new ClassCardViewModel { Title = "Software Design", StudentCount = 38, ImageUrl = "/images/logo.png", InstructorName = "Dr. John Von Neumann" },
-                new ClassCardViewModel { Title = "Technopreneurship", StudentCount = 42, ImageUrl = "/images/logo.png", InstructorName = "Ms. Ada Lovelace" },
-                new ClassCardViewModel { Title = "Logic Circuits", StudentCount = 40, ImageUrl = "/images/logo.png", InstructorName = "Dr. Alan Kay" },
-                new ClassCardViewModel { Title = "Data Communications", StudentCount = 37, ImageUrl = "/images/logo.png", InstructorName = "Prof. Dennis Ritchie" },
-                new ClassCardViewModel { Title = "Software Development 1", StudentCount = 39, ImageUrl = "/images/logo.png", InstructorName = "Dr. Bjarne Stroustrup" }
+                return RedirectToPage("/Account/Login");
+            }
+
+            // 2. POPULATE FILTERS
+            var generatedYears = new List<SelectListItem>();
+            int currentYear = DateTime.Now.Year;
+            if (DateTime.Now.Month < 6) currentYear--;
+
+            for (int i = 0; i <= 7; i++)
+            {
+                int startYear = currentYear - i;
+                string syLabel = $"{startYear}-{startYear + 1}";
+                generatedYears.Add(new SelectListItem { Value = syLabel, Text = syLabel });
+            }
+            SchoolYears = generatedYears;
+
+            Semesters = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "First", Text = "First" },
+                new SelectListItem { Value = "Second", Text = "Second" },
+                new SelectListItem { Value = "Summer", Text = "Summer" },
             };
+
+            // 3. SET DEFAULTS
+            if (string.IsNullOrEmpty(SchoolYear)) SchoolYear = SchoolYears.FirstOrDefault()?.Value ?? "";
+            if (string.IsNullOrEmpty(Semester)) Semester = "First";
+
+            // 4. FETCH & FILTER
+            var query = _context.Classenrollments
+                .Where(ce => ce.StudentId == studentId)
+                .Include(ce => ce.Class)
+                    .ThenInclude(c => c.Subject)
+                .Include(ce => ce.Class)
+                    .ThenInclude(c => c.Classassignments)
+                        .ThenInclude(ca => ca.Teacher)
+                .Include(ce => ce.Class)
+                    .ThenInclude(c => c.Classenrollments)
+                .Include(ce => ce.Class)
+                    .ThenInclude(c => c.SchoolYear)
+                .Include(ce => ce.Class)
+                    .ThenInclude(c => c.Semester)
+                .AsQueryable();
+
+            // --- APPLY FILTERS ---
+
+            // Filter by School Year
+            if (!string.IsNullOrEmpty(SchoolYear))
+            {
+                query = query.Where(ce => ce.Class.SchoolYear.YearName == SchoolYear);
+            }
+
+            // Filter by Semester
+            if (!string.IsNullOrEmpty(Semester))
+            {
+                query = query.Where(ce => ce.Class.Semester.SemesterName.Contains(Semester));
+            }
+
+            // Filter by Search Term (Subject Name)
+            if (!string.IsNullOrEmpty(SearchTerm))
+            {
+                string term = SearchTerm.ToLower();
+                query = query.Where(ce => ce.Class.Subject.SubjectName.ToLower().Contains(term));
+            }
+
+            var classEntities = await query.ToListAsync();
+
+            // 5. Map to ViewModel
+            Classes = classEntities.Select(ce => new ClassCardViewModel
+            {
+                ClassId = ce.ClassId,
+                Title = ce.Class.Subject.SubjectName ?? "Unknown Subject",
+                StudentCount = ce.Class.Classenrollments.Count,
+                // Logic for Instructor Name
+                InstructorName = ce.Class.Classassignments.Any() && ce.Class.Classassignments.First().Teacher != null
+                    ? $"{ce.Class.Classassignments.First().Teacher.FirstName} {ce.Class.Classassignments.First().Teacher.LastName}"
+                    : "TBA"
+            }).ToList();
+
+            return Page();
+        }
+
+        // --- AJAX Handler for Roster ---
+        public async Task<JsonResult> OnGetClassRosterAsync(long classId)
+        {
+            var students = await _context.Classenrollments
+                .Where(ce => ce.ClassId == classId)
+                .Include(ce => ce.Student)
+                .OrderBy(ce => ce.Student.LastName)
+                .Select(ce => new
+                {
+                    fullName = $"{ce.Student.FirstName} {ce.Student.LastName}",
+                    studentNumber = ce.Student.StudentNumber
+                })
+                .ToListAsync();
+
+            return new JsonResult(students);
         }
     }
 
     public class ClassCardViewModel
     {
+        public long ClassId { get; set; }
         public string Title { get; set; } = string.Empty;
         public int StudentCount { get; set; }
-        public string ImageUrl { get; set; } = string.Empty;
-        // NEW PROPERTY
         public string InstructorName { get; set; } = string.Empty;
+
+        // Helper to get Initials (e.g. "Data Structures" -> "DS")
+        public string Initials
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(Title)) return "??";
+                var words = Title.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (words.Length >= 2)
+                    return $"{words[0][0]}{words[1][0]}".ToUpper();
+                else
+                    return words[0].Length > 1 ? words[0].Substring(0, 2).ToUpper() : words[0].ToUpper();
+            }
+        }
     }
 }

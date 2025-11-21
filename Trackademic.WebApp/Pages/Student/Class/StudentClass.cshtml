@@ -6,47 +6,158 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/student-class.css" asp-append-version="true" />
+    <style>
+        /* --- GRID FIX --- */
+        .class-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        /* Card Styling */
+        .class-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+            .class-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            }
+
+        /* --- INITIALS CONTAINER --- */
+        .class-initials {
+            width: 100%;
+            height: 140px;
+            background: linear-gradient(135deg, #0d6efd, #0a58ca);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            letter-spacing: 2px;
+        }
+
+        .class-card-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .class-card-info {
+            padding: 1.25rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+            .class-card-info h5 {
+                font-weight: 600;
+                margin-bottom: 0.5rem;
+                color: #333;
+                line-height: 1.4;
+            }
+
+            .class-card-info p {
+                margin: 0;
+                color: #6c757d;
+                font-size: 0.9rem;
+            }
+
+        .d-none {
+            display: none !important;
+        }
+    </style>
 }
 
-<div class="classes-header">
-    <h1 class="classes-title">Classes</h1>
-    <div class="classes-header-right">
-        <div class="search-bar">
-            <i class="bi bi-search"></i>
-            <input type="text" class="form-control" placeholder="Search">
-        </div>
-        <a href="#" class="text-secondary fs-4"><i class="bi bi-bell"></i></a>
+<div class="container-fluid p-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark">Classes</h2>
     </div>
-</div>
 
-<div class="classes-actions">
-    <form method="get" class="classes-filters">
-        <select asp-for="SchoolYear" asp-items="Model.SchoolYears" class="form-select" style="width: 150px;"></select>
-        <select asp-for="Semester" asp-items="Model.Semesters" class="form-select" style="width: 150px;"></select>
-        <select asp-for="Status" asp-items="Model.Statuses" class="form-select" style="width: 150px;"></select>
-        <button type="submit" class="btn btn-sm btn-filter">Filter</button>
-    </form>
-</div>
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-body bg-light rounded">
+            <form method="get" class="row g-3 align-items-end">
 
-<div class="class-grid">
-    @foreach (var cls in Model.Classes)
-    {
-        <div class="class-card"
-             data-title="@cls.Title"
-             data-instructor="@cls.InstructorName"
-             onclick="showRosterModal(this)">
-            <div class="class-card-content">
-                <img src="@cls.ImageUrl" alt="@cls.Title" class="class-card-image" />
-                <div class="class-card-info">
-                    <h5>@cls.Title</h5>
-                    <p>@cls.StudentCount Students</p>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-secondary">School Year</label>
+                    <select asp-for="SchoolYear" asp-items="Model.SchoolYears" class="form-select shadow-sm"></select>
                 </div>
-            </div>
-        </div>
-    }
-</div>
 
-<div style="height: 50px;"></div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-secondary">Semester</label>
+                    <select asp-for="Semester" asp-items="Model.Semesters" class="form-select shadow-sm"></select>
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100 shadow-sm">
+                        <i class="bi bi-filter me-2"></i> Filter
+                    </button>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-secondary">Search</label>
+                    <div class="input-group shadow-sm">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="mainClassSearch" name="SearchTerm" value="@Model.SearchTerm"
+                               class="form-control border-start-0" placeholder="Search Subject...">
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <div class="class-grid" id="classGridContainer">
+        @if (Model.Classes.Any())
+        {
+            @foreach (var cls in Model.Classes)
+            {
+                <div class="class-card"
+                     data-id="@cls.ClassId"
+                     data-title="@cls.Title"
+                     data-instructor="@cls.InstructorName"
+                     onclick="showRosterModal(this)">
+                    <div class="class-card-content">
+
+                        <div class="class-initials">
+                            @cls.Initials
+                        </div>
+
+                        <div class="class-card-info">
+                            <h5>@cls.Title</h5>
+                            <p>@cls.StudentCount Students</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12 text-center py-5" style="grid-column: 1 / -1;">
+                <p class="text-muted fs-5">No classes found.</p>
+            </div>
+        }
+
+        <div id="noSearchMatches" class="col-12 text-center py-5 d-none" style="grid-column: 1 / -1;">
+            <p class="text-muted fs-5">No subjects match your search.</p>
+        </div>
+    </div>
+
+    <div style="height: 50px;"></div>
+
+</div>
 
 <div class="modal fade" id="rosterModal" tabindex="-1" aria-labelledby="rosterModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -59,34 +170,15 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="search-bar mb-3">
-                    <i class="bi bi-search"></i>
-                    <input type="text" id="studentSearchInput" class="form-control" placeholder="Search students by name or ID">
-                </div>
 
                 <div id="studentListContainer">
-                    <ul class="list-group" id="studentList">
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            John Doe
-                            <span class="badge bg-primary rounded-pill">ID: 20210001</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Jane Smith
-                            <span class="badge bg-primary rounded-pill">ID: 20210002</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Robert Green
-                            <span class="badge bg-primary rounded-pill">ID: 20210003</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Alice Johnson
-                            <span class="badge bg-primary rounded-pill">ID: 20210004</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Bob Williams
-                            <span class="badge bg-primary rounded-pill">ID: 20210005</span>
-                        </li>
-                    </ul>
+                    <div id="rosterLoading" class="text-center py-3 d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+
+                    <ul class="list-group" id="studentList"></ul>
                 </div>
             </div>
             <div class="modal-footer">
@@ -98,36 +190,80 @@
 
 @section Scripts {
     <script>
-        // JS function to handle the click, update modal content, and display the modal
-        function showRosterModal(cardElement) {
-            // Get data attributes from the clicked card
+        // --- 1. INSTANT CLASS SEARCH (Main Page) ---
+        document.getElementById('mainClassSearch').addEventListener('keyup', function() {
+            const filter = this.value.toLowerCase();
+            const cards = document.querySelectorAll('.class-card');
+            let hasVisible = false;
+
+            cards.forEach(card => {
+                const title = card.getAttribute('data-title').toLowerCase();
+                const instructor = card.getAttribute('data-instructor').toLowerCase();
+
+                // Check if Title OR Instructor matches
+                if (title.includes(filter) || instructor.includes(filter)) {
+                    card.classList.remove('d-none');
+                    hasVisible = true;
+                } else {
+                    card.classList.add('d-none');
+                }
+            });
+
+            // Toggle "No Results" message
+            const noMatchMsg = document.getElementById('noSearchMatches');
+            if (!hasVisible && cards.length > 0) {
+                noMatchMsg.classList.remove('d-none');
+            } else {
+                noMatchMsg.classList.add('d-none');
+            }
+        });
+
+        // --- 2. ROSTER MODAL LOGIC ---
+        async function showRosterModal(cardElement) {
+            const classId = cardElement.getAttribute('data-id');
             const title = cardElement.getAttribute('data-title');
             const instructor = cardElement.getAttribute('data-instructor');
 
-            // Update the modal content
             document.getElementById('rosterModalTitle').innerText = title;
             document.getElementById('rosterModalInstructor').innerText = `Instructor: ${instructor}`;
 
-            // Show the modal using Bootstrap's JS API
+            const listContainer = document.getElementById('studentList');
+            const loadingSpinner = document.getElementById('rosterLoading');
+
+            // Reset List & Show Spinner
+            listContainer.innerHTML = '';
+            loadingSpinner.classList.remove('d-none');
+
             var rosterModal = new bootstrap.Modal(document.getElementById('rosterModal'));
             rosterModal.show();
-        }
 
-        // Student Search/Filter functionality (Client-Side)
-        document.getElementById('studentSearchInput').addEventListener('keyup', function() {
-            const filter = this.value.toUpperCase();
-            const ul = document.getElementById('studentList');
-            const li = ul.getElementsByTagName('li');
+            try {
+                const response = await fetch(`?handler=ClassRoster&classId=${classId}`);
+                if (!response.ok) throw new Error('Failed to load roster');
 
-            // Loop through all list items, and hide those that don't match the search query
-            for (let i = 0; i < li.length; i++) {
-                const text = li[i].textContent || li[i].innerText;
-                if (text.toUpperCase().indexOf(filter) > -1) {
-                    li[i].style.display = ""; // Show
+                const students = await response.json();
+
+                loadingSpinner.classList.add('d-none');
+
+                if (students.length === 0) {
+                    listContainer.innerHTML = '<li class="list-group-item text-center text-muted">No students found.</li>';
                 } else {
-                    li[i].style.display = "none"; // Hide
+                    students.forEach(student => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                        li.innerHTML = `
+                            <span class="student-name fw-medium">${student.fullName}</span>
+                            <span class="badge bg-primary rounded-pill">ID: ${student.studentNumber}</span>
+                        `;
+                        listContainer.appendChild(li);
+                    });
                 }
+
+            } catch (error) {
+                console.error(error);
+                loadingSpinner.classList.add('d-none');
+                listContainer.innerHTML = '<li class="list-group-item text-center text-danger">Error loading student list.</li>';
             }
-        });
+        }
     </script>
 }

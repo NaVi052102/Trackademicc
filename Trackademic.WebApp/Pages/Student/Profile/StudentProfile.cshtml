@@ -1,8 +1,8 @@
-﻿@page
-@model Trackademic.WebApp.Pages.Teachers.ProfileModel
+@page
+@model Trackademic.WebApp.Pages.Student.Profile.StudentProfileModel
 @{
-    Layout = "_TeachersLayout";
-    ViewData["Title"] = "Teacher Profile";
+    Layout = "_Layout";
+    ViewData["Title"] = "Student Profile";
 }
 
 <style>
@@ -36,7 +36,7 @@
 </style>
 
 <div class="container mt-4">
-    <h2 class="mb-4">Teacher Profile</h2>
+    <h2 class="mb-4">Student Profile</h2>
 
     @if (TempData["Message"] != null)
     {
@@ -51,10 +51,10 @@
             <div class="card shadow-sm text-center p-4 h-100">
                 <div class="mb-3">
                     <div id="profileImgWrapper" class="profile-img-container border shadow-sm mx-auto">
-                        @if (!string.IsNullOrEmpty(Model.TeacherProfile.ProfilePictureUrl))
+                        @if (!string.IsNullOrEmpty(Model.StudentProfile.ProfilePictureUrl))
                         {
                             <img id="avatarPreview"
-                                 src="@Model.TeacherProfile.ProfilePictureUrl"
+                                 src="@Model.StudentProfile.ProfilePictureUrl"
                                  style="width: 100%; height: 100%; object-fit: cover;"
                                  alt="Profile Picture" />
                         }
@@ -62,7 +62,7 @@
                         {
                             <div id="avatarPlaceholder" class="bg-secondary d-flex align-items-center justify-content-center text-white h-100 w-100"
                                  style="font-size: 4rem;">
-                                @Model.TeacherProfile.FirstName?.FirstOrDefault()@Model.TeacherProfile.LastName?.FirstOrDefault()
+                                @Model.StudentProfile.FirstName?.FirstOrDefault()@Model.StudentProfile.LastName?.FirstOrDefault()
                             </div>
                             <img id="avatarPreview" class="d-none" style="width: 100%; height: 100%; object-fit: cover;" />
                         }
@@ -74,9 +74,9 @@
                     <p class="text-muted small mt-2" id="photoHelpText" style="display:none;">Click image to change</p>
                 </div>
 
-                <h4>@Model.TeacherProfile.FirstName @Model.TeacherProfile.LastName</h4>
-                <p class="text-muted mb-1">@Model.TeacherProfile.Department</p>
-                <p class="text-muted small">ID: @Model.TeacherProfile.TeacherId</p>
+                <h4>@Model.StudentProfile.FirstName @Model.StudentProfile.LastName</h4>
+                <p class="text-muted mb-1">Student</p>
+                <p class="text-muted small">Student No: @Model.StudentProfile.StudentNumber</p>
 
                 <div id="editTriggerBtn" class="mt-3">
                     <button type="button" class="btn btn-outline-primary w-100" onclick="enableEditMode()">
@@ -98,27 +98,27 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <small class="text-muted d-block">First Name</small>
-                                <p class="fw-bold">@Model.TeacherProfile.FirstName</p>
+                                <p class="fw-bold">@Model.StudentProfile.FirstName</p>
                             </div>
                             <div class="col-md-6">
                                 <small class="text-muted d-block">Last Name</small>
-                                <p class="fw-bold">@Model.TeacherProfile.LastName</p>
+                                <p class="fw-bold">@Model.StudentProfile.LastName</p>
                             </div>
                             <div class="col-md-6">
                                 <small class="text-muted d-block">Email Address</small>
-                                <p>@Model.TeacherProfile.Email</p>
+                                <p>@Model.StudentProfile.Email</p>
                             </div>
                             <div class="col-md-6">
                                 <small class="text-muted d-block">Contact Number</small>
-                                <p>@(string.IsNullOrEmpty(Model.TeacherProfile.ContactNumber) ? "Not set" : Model.TeacherProfile.ContactNumber)</p>
+                                <p>@(string.IsNullOrEmpty(Model.StudentProfile.ContactNumber) ? "Not set" : Model.StudentProfile.ContactNumber)</p>
                             </div>
                             <div class="col-md-6">
                                 <small class="text-muted d-block">Date of Birth</small>
-                                <p>@(Model.TeacherProfile.DateOfBirth?.ToString("yyyy-MM-dd") ?? "N/A")</p>
+                                <p>@(Model.StudentProfile.DateOfBirth?.ToString("yyyy-MM-dd") ?? "N/A")</p>
                             </div>
                             <div class="col-12">
                                 <small class="text-muted d-block">Home Address</small>
-                                <p>@(string.IsNullOrEmpty(Model.TeacherProfile.Address) ? "Not set" : Model.TeacherProfile.Address)</p>
+                                <p>@(string.IsNullOrEmpty(Model.StudentProfile.Address) ? "Not set" : Model.StudentProfile.Address)</p>
                             </div>
                         </div>
                     </div>
@@ -127,23 +127,27 @@
                         <form id="profileForm" method="post" enctype="multipart/form-data">
                             <div class="row g-3">
 
-                                <input type="file" id="hiddenFileInput" asp-for="TeacherProfile.PhotoUpload" class="d-none" accept="image/*" onchange="previewImage(this)" />
+                                <input type="file" id="hiddenFileInput" asp-for="StudentProfile.ProfilePictureUrl" name="PhotoUpload" class="d-none" accept="image/*" onchange="previewImage(this)" />
 
                                 <div class="col-md-6">
                                     <label class="form-label text-muted">First Name</label>
-                                    <input type="text" class="form-control bg-light" value="@Model.TeacherProfile.FirstName" disabled />
+                                    <input type="text" class="form-control bg-light" value="@Model.StudentProfile.FirstName" disabled />
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label text-muted">Last Name</label>
-                                    <input type="text" class="form-control bg-light" value="@Model.TeacherProfile.LastName" disabled />
+                                    <input type="text" class="form-control bg-light" value="@Model.StudentProfile.LastName" disabled />
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label text-muted">Email Address</label>
-                                    <input type="text" class="form-control bg-light" value="@Model.TeacherProfile.Email" disabled />
+                                    <input type="text" class="form-control bg-light" value="@Model.StudentProfile.Email" disabled />
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label text-muted">Date of Birth</label>
-                                    <input type="text" class="form-control bg-light" value="@(Model.TeacherProfile.DateOfBirth?.ToString("yyyy-MM-dd") ?? "N/A")" disabled />
+                                    <input type="text" class="form-control bg-light" value="@(Model.StudentProfile.DateOfBirth?.ToString("yyyy-MM-dd") ?? "N/A")" disabled />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">Student Number</label>
+                                    <input type="text" class="form-control bg-light" value="@Model.StudentProfile.StudentNumber" disabled />
                                 </div>
 
                                 <div class="col-12 border-top pt-3 mt-2">
@@ -151,29 +155,26 @@
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label asp-for="TeacherProfile.ContactNumber" class="form-label">Contact Number</label>
-
-                                    <input asp-for="TeacherProfile.ContactNumber"
+                                    <label asp-for="StudentProfile.ContactNumber" class="form-label">Contact Number</label>
+                                    <input asp-for="StudentProfile.ContactNumber"
                                            id="phoneInput"
                                            class="form-control"
                                            placeholder="09xxxxxxxxx"
                                            maxlength="11"
                                            oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
-
                                     <span id="phoneError" class="text-danger d-none">Phone number must be exactly 11 digits.</span>
                                 </div>
 
                                 <div class="col-12">
-                                    <label asp-for="TeacherProfile.Address" class="form-label">Home Address</label>
-                                    <textarea asp-for="TeacherProfile.Address" class="form-control" rows="3" placeholder="Enter home address"></textarea>
-                                    <span asp-validation-for="TeacherProfile.Address" class="text-danger"></span>
+                                    <label asp-for="StudentProfile.Address" class="form-label">Home Address</label>
+                                    <textarea asp-for="StudentProfile.Address" class="form-control" rows="3" placeholder="Enter home address"></textarea>
+                                    <span asp-validation-for="StudentProfile.Address" class="text-danger"></span>
                                 </div>
 
                                 <div class="col-12 text-end mt-4">
                                     <button type="button" class="btn btn-secondary me-2" onclick="cancelEditMode()">
                                         Cancel
                                     </button>
-
                                     <button type="button" class="btn btn-success" onclick="validateAndSave()">
                                         <i class="bi bi-save me-2"></i> Save Changes
                                     </button>
@@ -207,31 +208,24 @@
             document.getElementById('profileImgWrapper').classList.remove('editable');
             document.getElementById('photoHelpText').style.display = 'none';
 
-            // Hide error if it was showing
             document.getElementById('phoneError').classList.add('d-none');
             document.getElementById('phoneInput').classList.remove('border-danger');
         }
 
-        // NEW: Validation Function
         function validateAndSave() {
             const phoneInput = document.getElementById('phoneInput');
             const phoneError = document.getElementById('phoneError');
             const phoneValue = phoneInput.value;
 
-            // Check if it has value and if length is exactly 11
-            // If it's optional (can be empty), change to: if (phoneValue.length > 0 && phoneValue.length !== 11)
-            if (phoneValue.length !== 11) {
-                // Show Error
+            if (phoneValue && phoneValue.length !== 11) {
                 phoneError.classList.remove('d-none');
                 phoneInput.classList.add('border-danger');
-                return; // Stop here, do not save
+                return;
             } else {
-                // Hide Error
                 phoneError.classList.add('d-none');
                 phoneInput.classList.remove('border-danger');
             }
 
-            // If validation passes, submit the form manually
             document.getElementById('profileForm').submit();
         }
 

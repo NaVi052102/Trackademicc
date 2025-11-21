@@ -1,187 +1,198 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
+using Trackademic.Data.Data;   // FIX
+using Trackademic.Data.Models; // FIX
 
 namespace Trackademic.WebApp.Pages.Teachers
 {
+    [Authorize(Roles = "Teacher")]
     public class ClassesModel : PageModel
     {
-        // --- Filter/Binding Properties ---
-        [BindProperty(SupportsGet = true)]
-        public string SchoolYear { get; set; }
+        private readonly TrackademicDbContext _context; // FIX
 
-        [BindProperty(SupportsGet = true)]
-        public string Semester { get; set; }
-
-        [BindProperty(SupportsGet = true)]
-        public string ClassId { get; set; }
-
-        // --- Enrollment State Properties ---
-        [BindProperty(SupportsGet = true)]
-        public bool IsEnrollmentMode { get; set; } = false; 
-
-        [BindProperty]
-        public string StudentSearchTerm { get; set; }
-        
-        // --- Dropdown Population Lists ---
-        public List<SelectListItem> SchoolYears { get; } = new List<SelectListItem>
+        public ClassesModel(TrackademicDbContext context)
         {
-            new SelectListItem { Value = "2930", Text = "2930" },
-            new SelectListItem { Value = "2829", Text = "2829" },
-            new SelectListItem { Value = "2425", Text = "2425" }
-        };
+            _context = context;
+        }
 
-        public List<SelectListItem> Semesters { get; } = new List<SelectListItem>
-        {
-            new SelectListItem { Value = "First", Text = "First" },
-            new SelectListItem { Value = "Second", Text = "Second" },
-            new SelectListItem { Value = "Summer", Text = "Summer" }
-        };
+        [BindProperty(SupportsGet = true)] public string SchoolYear { get; set; } = "2024-2025";
+        [BindProperty(SupportsGet = true)] public string Semester { get; set; } = "1st Semester";
+        [BindProperty(SupportsGet = true)] public long? ClassId { get; set; }
 
-        public List<SelectListItem> ClassSelectList { get; set; }
+        [BindProperty(SupportsGet = true)] public bool IsEnrollmentMode { get; set; } = false;
+        [BindProperty] public string StudentSearchTerm { get; set; }
 
-        // --- Detail View Data ---
+        public List<SelectListItem> ClassSelectList { get; set; } = new List<SelectListItem>();
         public ClassDetailsViewModel SelectedClass { get; set; }
         public List<StudentRosterViewModel> Students { get; set; } = new List<StudentRosterViewModel>();
-        
-        // Data container for the search results in enrollment mode
         public List<StudentRosterViewModel> EnrollmentSearchResults { get; set; } = new List<StudentRosterViewModel>();
 
+        public List<SelectListItem> SchoolYears { get; } = new List<SelectListItem> { new SelectListItem { Value = "2024-2025", Text = "2024-2025" } };
+        public List<SelectListItem> Semesters { get; } = new List<SelectListItem> { new SelectListItem { Value = "1st Semester", Text = "1st Semester" } };
 
-        public void OnGet()
+        public async Task OnGetAsync()
         {
-            if (string.IsNullOrEmpty(SchoolYear)) SchoolYear = "2425";
-            if (string.IsNullOrEmpty(Semester)) Semester = "First";
-
-            LoadAllClassesForDropdown(SchoolYear, Semester);
-
-            if (!string.IsNullOrEmpty(ClassId))
-            {
-                LoadClassDetails(ClassId, SchoolYear, Semester);
-                LoadStudentRoster(ClassId, SchoolYear, Semester);
-            }
+            await LoadPageData();
         }
-        
-        // Handler to switch the UI to Enrollment Mode
-        public IActionResult OnPostEnrollMode()
+
+        public async Task<IActionResult> OnPostEnrollMode()
         {
-            LoadAllClassesForDropdown(SchoolYear, Semester);
-            LoadClassDetails(ClassId, SchoolYear, Semester);
-            LoadStudentRoster(ClassId, SchoolYear, Semester);
-            IsEnrollmentMode = true; 
+            await LoadPageData();
+            IsEnrollmentMode = true;
             return Page();
         }
 
-        // Handler to search for a student when in Enrollment Mode
-        public IActionResult OnPostSearchStudent()
+        public async Task<IActionResult> OnPostRemoveStudentAsync(long studentIdToRemove)
         {
-            LoadAllClassesForDropdown(SchoolYear, Semester);
-            LoadClassDetails(ClassId, SchoolYear, Semester);
-            LoadStudentRoster(ClassId, SchoolYear, Semester); 
+            // FIX: Classenrollments
+            var enrollment = await _context.Classenrollments
+                .FirstOrDefaultAsync(ce => ce.ClassId == ClassId && ce.StudentId == studentIdToRemove);
+
+            if (enrollment != null)
+            {
+                var grade = await _context.Grades.FirstOrDefaultAsync(g => g.EnrollmentId == enrollment.Id);
+                if (grade != null) _context.Grades.Remove(grade);
+
+                _context.Classenrollments.Remove(enrollment);
+                await _context.SaveChangesAsync();
+
+                TempData["Message"] = "Student successfully removed.";
+                TempData["MessageType"] = "success";
+            }
+            return RedirectToPage(new { SchoolYear, Semester, ClassId });
+        }
+
+        public async Task<IActionResult> OnPostSearchStudentAsync()
+        {
+            await LoadPageData();
             IsEnrollmentMode = true;
 
             if (!string.IsNullOrEmpty(StudentSearchTerm))
             {
-                string term = StudentSearchTerm.ToLower();
+                var term = StudentSearchTerm.ToLower();
+                // FIX: Classenrollments
+                var existingStudentIds = await _context.Classenrollments
+                    .Where(ce => ce.ClassId == ClassId)
+                    .Select(ce => ce.StudentId)
+                    .ToListAsync();
 
-                // --- SIMULATED SEARCH LOGIC (UPDATED WITH FIRST/LAST NAMES) ---
-                
-                if (term.Contains("gomez"))
+                var matches = await _context.Students
+                    .Where(s => (s.StudentNumber.Contains(term) || s.LastName.Contains(term) || s.FirstName.Contains(term))
+                                && !existingStudentIds.Contains(s.Id))
+                    .Take(10)
+                    .ToListAsync();
+
+                EnrollmentSearchResults = matches.Select(s => new StudentRosterViewModel
                 {
-                    EnrollmentSearchResults.Add(new StudentRosterViewModel { StudentId = "S006", LastName = "Gomez", FirstName = "Mark D." });
-                }
-                else if (term.Contains("t001") || term.Contains("tan"))
-                {
-                    EnrollmentSearchResults.Add(new StudentRosterViewModel { StudentId = "T001", LastName = "Tan", FirstName = "Lily A." });
-                    // Added Tamayo here as well if searching generally
-                    EnrollmentSearchResults.Add(new StudentRosterViewModel { StudentId = "T002", LastName = "Tamayo", FirstName = "Ben R." });
-                }
-                // NEW: Added logic to find a new student
-                else if (term.Contains("rivera") || term.Contains("josh")) 
-                {
-                    EnrollmentSearchResults.Add(new StudentRosterViewModel { StudentId = "N099", LastName = "Rivera", FirstName = "Josh" });
-                }
+                    StudentId = s.Id,
+                    StudentNumber = s.StudentNumber,
+                    FirstName = s.FirstName,
+                    LastName = s.LastName,
+                    FullName = $"{s.LastName}, {s.FirstName}"
+                }).ToList();
             }
             return Page();
         }
-        
-        // NEW HANDLER: Remove a student from the class
-        public IActionResult OnPostRemoveStudent(string studentIdToRemove)
+
+        // --- ACTION: ENROLL STUDENT ---
+        public async Task<IActionResult> OnPostEnrollStudentAsync(long studentIdToEnroll)
         {
-            // NOTE: This currently relies on static data, so the student will reappear on next load.
-            TempData["Message"] = $"Student ID {studentIdToRemove} successfully removed (simulated).";
-            TempData["MessageType"] = "success"; 
-            
-            return RedirectToPage(new { SchoolYear, Semester, ClassId });
-        }
-        
-        // Placeholder for the actual enrollment action
-        public IActionResult OnPostEnrollStudent(string studentIdToEnroll)
-        {
-            // In a real app, you would execute the INSERT into classenrollment table here.
-            TempData["Message"] = $"Student ID {studentIdToEnroll} successfully enrolled (simulated).";
-            TempData["MessageType"] = "success"; 
-            
+            if (!ClassId.HasValue) return Page();
+
+            bool exists = await _context.Classenrollments
+                .AnyAsync(ce => ce.ClassId == ClassId.Value && ce.StudentId == studentIdToEnroll);
+
+            if (!exists)
+            {
+                // 1. Create Enrollment FIRST
+                var newEnrollment = new Classenrollment
+                {
+                    ClassId = ClassId.Value,
+                    StudentId = studentIdToEnroll,
+                    EnrollmentDate = DateOnly.FromDateTime(DateTime.Now),
+                    EnrollmentStatus = "Enrolled"
+                };
+                _context.Classenrollments.Add(newEnrollment);
+
+                // 2. SAVE immediately to generate the Enrollment ID
+                await _context.SaveChangesAsync();
+
+                // 3. Now create the Grade using the generated ID
+                var newGrade = new Grade
+                {
+                    EnrollmentId = newEnrollment.Id, // Now this ID is real!
+                                                     // Initialize with default values to be safe
+                    MidtermGrade = 0,
+                    FinalGrade = 0,
+                    FinalScore = 0
+                };
+                _context.Grades.Add(newGrade);
+
+                // 4. Save the Grade
+                await _context.SaveChangesAsync();
+
+                TempData["Message"] = "Student successfully enrolled.";
+                TempData["MessageType"] = "success";
+            }
+
             return RedirectToPage(new { SchoolYear, Semester, ClassId, IsEnrollmentMode = false });
         }
 
-
-        // --- Private Data Loading Methods ---
-        private void LoadAllClassesForDropdown(string year, string semester)
+        private async Task LoadPageData()
         {
-            var allClasses = new List<ClassCardViewModel>();
-            if (year == "2425" && semester == "First")
-            {
-                allClasses.Add(new ClassCardViewModel { ClassId = "CPE461-H2", Title = "CPE461 - Embedded Systems (H2-4R4)" });
-                allClasses.Add(new ClassCardViewModel { ClassId = "CS201-B1", Title = "CS201 - Data Structures (B1-3T2)" });
-                allClasses.Add(new ClassCardViewModel { ClassId = "SE305-A3", Title = "SE305 - Software Design (A3-2A1)" });
-            }
-            ClassSelectList = allClasses.Select(c => new SelectListItem { Value = c.ClassId, Text = c.Title }).ToList();
-        }
+            string userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!long.TryParse(userIdStr, out long userId)) return;
 
-        private void LoadClassDetails(string classId, string year, string semester)
-        {
-            if (year == "2425" && semester == "First" && classId == "CPE461-H2")
-            {
-                SelectedClass = new ClassDetailsViewModel { SubjectCode = "CPE461", SectionName = "H2-4R4", CourseTitle = "Embedded Systems", TotalStudents = 32 };
-            }
-            else if (classId == "CS201-B1")
-            {
-                SelectedClass = new ClassDetailsViewModel { SubjectCode = "CS201", SectionName = "B1-3T2", CourseTitle = "Data Structures", TotalStudents = 45 };
-            }
-        }
+            // FIX: Classassignments
+            var classes = await _context.Classassignments
+                .Where(ca => ca.TeacherId == userId) // IMPORTANT: Ensure this matches your Teacher ID Type (long vs string)
+                .Include(ca => ca.Class).ThenInclude(c => c.Subject)
+                .Select(ca => new { ca.Class.Id, Title = $"{ca.Class.Subject.SubjectCode} - {ca.Class.ClassSection}" })
+                .ToListAsync();
 
-        private void LoadStudentRoster(string classId, string year, string semester)
-        {
-            if (year == "2425" && semester == "First" && classId == "CPE461-H2")
+            ClassSelectList = classes.Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Title }).ToList();
+
+            if (ClassId.HasValue && ClassId.Value > 0)
             {
-                // UPDATED: Populating First Name and Last Name separately
-                Students = new List<StudentRosterViewModel>
+                var cls = await _context.Classes
+                    .Include(c => c.Subject)
+                    .Include(c => c.Classenrollments).ThenInclude(ce => ce.Student) // FIX: Classenrollments
+                    .FirstOrDefaultAsync(c => c.Id == ClassId.Value);
+
+                if (cls != null)
                 {
-                    new StudentRosterViewModel { StudentId = "S001", LastName = "Cruz", FirstName = "Maria L." },
-                    new StudentRosterViewModel { StudentId = "S002", LastName = "Dela Rosa", FirstName = "Jose F." },
-                    new StudentRosterViewModel { StudentId = "S003", LastName = "Reyes", FirstName = "Miguel T." },
-                    new StudentRosterViewModel { StudentId = "S004", LastName = "Santos", FirstName = "Anna K." },
-                    new StudentRosterViewModel { StudentId = "S005", LastName = "Lim", FirstName = "Kevin C." }
-                };
+                    SelectedClass = new ClassDetailsViewModel
+                    {
+                        SubjectCode = cls.Subject.SubjectCode,
+                        SectionName = cls.ClassSection,
+                        CourseTitle = cls.Subject.SubjectName,
+                        TotalStudents = cls.Classenrollments.Count // FIX: Classenrollments
+                    };
+
+                    Students = cls.Classenrollments.Select(ce => new StudentRosterViewModel
+                    {
+                        StudentId = ce.Student.Id,
+                        StudentNumber = ce.Student.StudentNumber,
+                        FirstName = ce.Student.FirstName,
+                        LastName = ce.Student.LastName,
+                        FullName = $"{ce.Student.LastName}, {ce.Student.FirstName}"
+                    }).OrderBy(s => s.FullName).ToList();
+                }
+            }
+            else if (classes.Any())
+            {
+                ClassId = classes.First().Id;
+                await LoadPageData();
             }
         }
     }
 
-    // --- View Models ---
-    public class ClassCardViewModel { public string ClassId { get; set; } public string Title { get; set; } }
-    public class ClassDetailsViewModel { public string SubjectCode { get; set; } public string SectionName { get; set; } public string CourseTitle { get; set; } public int TotalStudents { get; set; } }
-    
-    // UPDATED VIEW MODEL
-    public class StudentRosterViewModel 
-    { 
-        public string StudentId { get; set; } 
-        public string FirstName { get; set; } 
-        public string LastName { get; set; } 
-        
-        // Helper property: This allows your HTML (@student.FullName) to keep working!
-        public string FullName => $"{LastName}, {FirstName}"; 
-    }
+    public class ClassDetailsViewModel { /* Unchanged */ public string SubjectCode { get; set; } public string SectionName { get; set; } public string CourseTitle { get; set; } public int TotalStudents { get; set; } }
+    public class StudentRosterViewModel { /* Unchanged */ public long StudentId { get; set; } public string StudentNumber { get; set; } public string FirstName { get; set; } public string LastName { get; set; } public string FullName { get; set; } }
 }
