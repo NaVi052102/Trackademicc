@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using Trackademic.Data.Data;   // TrackademicDbContext
-using Trackademic.Data.Models; // Data Models
+using System.Threading.Tasks;
+using Trackademic.Data.Data;
+using Trackademic.Data.Models;
 
 namespace Trackademic.WebApp.Pages.Teachers
 {
@@ -21,107 +23,178 @@ namespace Trackademic.WebApp.Pages.Teachers
             _context = context;
         }
 
-        // --- Properties ---
-        [BindProperty(SupportsGet = true)] public string SchoolYear { get; set; } = "2024-2025";
-        [BindProperty(SupportsGet = true)] public string Semester { get; set; } = "1st Semester";
+        // --- Filters ---
+        [BindProperty(SupportsGet = true)] public string SchoolYear { get; set; }
+        [BindProperty(SupportsGet = true)] public string Semester { get; set; }
         [BindProperty(SupportsGet = true)] public long? ClassId { get; set; }
 
-        // The list that binds to the HTML Form
-        [BindProperty] public List<GradeEntryViewModel> GradesList { get; set; } = new List<GradeEntryViewModel>();
+        // --- Dropdowns ---
+        public List<SelectListItem> SchoolYears { get; set; }
+        public List<SelectListItem> Semesters { get; set; }
+        public List<SelectListItem> ClassSelectList { get; set; } = new List<SelectListItem>();
 
-        // Dropdowns & Headers
-        public List<SelectListItem> AvailableClasses { get; set; } = new List<SelectListItem>();
-        public string SubjectDescription { get; set; } = "Select a class";
+        // --- Data ---
+        // FIX: Renamed the type to avoid conflict with Classes page
+        public GradesClassViewModel SelectedClass { get; set; }
 
-        public List<SelectListItem> SchoolYears { get; } = new List<SelectListItem> { new SelectListItem { Value = "2024-2025", Text = "2024-2025" } };
-        public List<SelectListItem> Semesters { get; } = new List<SelectListItem> { new SelectListItem { Value = "1st Semester", Text = "1st Semester" } };
+        [BindProperty]
+        public List<StudentGradeViewModel> StudentGrades { get; set; } = new List<StudentGradeViewModel>();
 
         public async Task OnGetAsync()
+        {
+            await LoadDropdownsAsync();
+
+            // Defaults
+            if (string.IsNullOrEmpty(SchoolYear)) SchoolYear = SchoolYears.FirstOrDefault()?.Value;
+            if (string.IsNullOrEmpty(Semester)) Semester = "First";
+
+            await LoadPageData();
+        }
+
+        public async Task<IActionResult> OnPostSaveGradesAsync()
+        {
+            if (StudentGrades != null && StudentGrades.Any())
+            {
+                foreach (var item in StudentGrades)
+                {
+                    // Find existing grade by EnrollmentId
+                    var gradeRecord = await _context.Grades.FirstOrDefaultAsync(g => g.EnrollmentId == item.EnrollmentId);
+
+                    // If it doesn't exist, create it
+                    if (gradeRecord == null)
+                    {
+                        gradeRecord = new Grade { EnrollmentId = item.EnrollmentId };
+                        _context.Grades.Add(gradeRecord);
+                    }
+
+                    gradeRecord.MidtermGrade = item.Midterm;
+                    gradeRecord.FinalScore = item.Final; // Final Term Score
+                    gradeRecord.FinalGrade = item.FinalGrade; // Computed Grade
+                }
+                await _context.SaveChangesAsync();
+                TempData["Message"] = "Grades saved successfully.";
+                TempData["MessageType"] = "success";
+            }
+
+            // Reload data to show updates
+            await LoadDropdownsAsync();
+            await LoadPageData();
+            return Page();
+        }
+
+        private async Task LoadDropdownsAsync()
+        {
+            // 1. Dynamic School Years
+            SchoolYears = new List<SelectListItem>();
+            int currentYear = DateTime.Now.Year;
+            if (DateTime.Now.Month < 6) currentYear--;
+
+            for (int i = 0; i <= 7; i++)
+            {
+                int startYear = currentYear - i;
+                string syLabel = $"{startYear}-{startYear + 1}";
+                SchoolYears.Add(new SelectListItem { Value = syLabel, Text = syLabel });
+            }
+
+            // 2. Static Semesters
+            Semesters = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "First", Text = "First" },
+                new SelectListItem { Value = "Second", Text = "Second" },
+                new SelectListItem { Value = "Summer", Text = "Summer" }
+            };
+            await Task.CompletedTask;
+        }
+
+        private async Task LoadPageData()
         {
             string userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!long.TryParse(userIdStr, out long userId)) return;
 
-            // 1. Load Classes Assigned to Teacher
-            var teacherClasses = await _context.Classassignments
+            // 1. Fetch Classes for Dropdown (Filtered)
+            var classesQuery = _context.Classassignments
                 .Where(ca => ca.TeacherId == userId)
                 .Include(ca => ca.Class).ThenInclude(c => c.Subject)
-                .Select(ca => new
-                {
-                    ca.Class.Id,
-                    Text = $"{ca.Class.Subject.SubjectCode} - {ca.Class.ClassSection}"
-                })
+                .Include(ca => ca.Class).ThenInclude(c => c.SchoolYear)
+                .Include(ca => ca.Class).ThenInclude(c => c.Semester)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(SchoolYear))
+            {
+                classesQuery = classesQuery.Where(ca => ca.Class.SchoolYear.YearName == SchoolYear);
+            }
+            if (!string.IsNullOrEmpty(Semester))
+            {
+                classesQuery = classesQuery.Where(ca => ca.Class.Semester.SemesterName.Contains(Semester));
+            }
+
+            var classes = await classesQuery
+                .Select(ca => new { ca.Class.Id, Title = $"{ca.Class.Subject.SubjectCode} - {ca.Class.ClassSection}" })
                 .ToListAsync();
 
-            AvailableClasses = teacherClasses.Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Text }).ToList();
+            ClassSelectList = classes.Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Title }).ToList();
 
-            // 2. If Class Selected, Load Grades
+            // 2. Load Data for Selected Class
             if (ClassId.HasValue && ClassId.Value > 0)
             {
-                await LoadGradesData(ClassId.Value);
-            }
-        }
-
-        private async Task LoadGradesData(long classId)
-        {
-            // Header Info
-            var cls = await _context.Classes.Include(c => c.Subject).FirstOrDefaultAsync(c => c.Id == classId);
-            if (cls != null) SubjectDescription = $"{cls.Subject.SubjectCode} - {cls.Subject.SubjectName}";
-
-            // Fetch Grades
-            var dbGrades = await _context.Grades
-                .Include(g => g.Enrollment)
-                    .ThenInclude(ce => ce.Student)
-                .Where(g => g.Enrollment.ClassId == classId)
-                .ToListAsync();
-
-            // Map to ViewModel
-            GradesList = dbGrades.Select(g => new GradeEntryViewModel
-            {
-                GradeId = g.Id,
-                StudentName = $"{g.Enrollment.Student.LastName}, {g.Enrollment.Student.FirstName}",
-                StudentNumber = g.Enrollment.Student.StudentNumber,
-                Midterm = g.MidtermGrade,
-                Final = g.FinalGrade,
-                FinalScore = g.FinalScore
-            }).OrderBy(x => x.StudentName).ToList();
-        }
-
-        public async Task<IActionResult> OnPostUpdateAllAsync()
-        {
-            if (GradesList == null || !GradesList.Any()) return Page();
-
-            foreach (var item in GradesList)
-            {
-                var grade = await _context.Grades.FindAsync(item.GradeId);
-                if (grade != null)
+                if (classes.Any(c => c.Id == ClassId.Value))
                 {
-                    // Update DB values from Form
-                    grade.MidtermGrade = item.Midterm;
-                    grade.FinalGrade = item.Final;
+                    var cls = await _context.Classes
+                        .Include(c => c.Subject)
+                        .Include(c => c.Classenrollments)
+                            .ThenInclude(ce => ce.Student)
+                        .Include(c => c.Classenrollments)
+                            .ThenInclude(ce => ce.Grade)
+                        .FirstOrDefaultAsync(c => c.Id == ClassId.Value);
 
-                    // Auto-Calculate Final Score (Average)
-                    if (grade.MidtermGrade.HasValue && grade.FinalGrade.HasValue)
+                    if (cls != null)
                     {
-                        grade.FinalScore = (grade.MidtermGrade.Value + grade.FinalGrade.Value) / 2.0m;
+                        // FIX: Using the new unique class name
+                        SelectedClass = new GradesClassViewModel
+                        {
+                            SubjectCode = cls.Subject.SubjectCode,
+                            SectionName = cls.ClassSection,
+                            CourseTitle = cls.Subject.SubjectName,
+                            TotalStudents = cls.Classenrollments.Count
+                        };
+
+                        StudentGrades = cls.Classenrollments.Select(ce => new StudentGradeViewModel
+                        {
+                            EnrollmentId = ce.Id,
+                            StudentIdStr = ce.Student.StudentNumber,
+                            StudentName = $"{ce.Student.LastName}, {ce.Student.FirstName}",
+                            Midterm = ce.Grade?.MidtermGrade,
+                            Final = ce.Grade?.FinalScore,
+                            FinalGrade = ce.Grade?.FinalGrade,
+                            Status = (ce.Grade?.FinalGrade <= 3.0m && ce.Grade?.FinalGrade > 0) ? "Passed" : ((ce.Grade?.FinalGrade > 3.0m) ? "Failed" : "Enrolled")
+                        }).OrderBy(s => s.StudentName).ToList();
                     }
                 }
+                else
+                {
+                    ClassId = null; // Reset if invalid
+                }
             }
-
-            await _context.SaveChangesAsync();
-            TempData["Message"] = "Grades successfully saved!";
-            TempData["MessageType"] = "success";
-
-            return RedirectToPage(new { SchoolYear, Semester, ClassId });
         }
     }
 
-    public class GradeEntryViewModel
+    // FIX: Renamed class to avoid conflict with Classes.cshtml.cs
+    public class GradesClassViewModel
     {
-        public long GradeId { get; set; }
-        public string StudentNumber { get; set; }
+        public string SubjectCode { get; set; }
+        public string SectionName { get; set; }
+        public string CourseTitle { get; set; }
+        public int TotalStudents { get; set; }
+    }
+
+    public class StudentGradeViewModel
+    {
+        public long EnrollmentId { get; set; }
+        public string StudentIdStr { get; set; }
         public string StudentName { get; set; }
         public decimal? Midterm { get; set; }
         public decimal? Final { get; set; }
-        public decimal? FinalScore { get; set; }
+        public decimal? FinalGrade { get; set; }
+        public string Status { get; set; }
     }
 }

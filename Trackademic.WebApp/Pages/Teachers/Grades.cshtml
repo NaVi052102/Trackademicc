@@ -2,101 +2,179 @@
 @model Trackademic.WebApp.Pages.Teachers.GradesModel
 @{
     Layout = "_TeachersLayout";
-    ViewData["Title"] = "Grading Sheet";
+    ViewData["Title"] = "Grades";
 }
 
-<div class="container mt-4">
-    <h2>Grading Sheet</h2>
-
-    @if (TempData["Message"] != null)
-    {
-        <div class="alert alert-@TempData["MessageType"] alert-dismissible fade show" role="alert">
-            @TempData["Message"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+<style>
+    /* --- Layout Styles (Matches Classes Page) --- */
+    .schedule-filters {
+        padding: 1rem;
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
 
-    <div class="card p-3 mb-4 bg-light">
-        <form method="get" class="row g-3 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label">School Year</label>
-                <select asp-for="SchoolYear" asp-items="Model.SchoolYears" class="form-select"></select>
+    .btn-set-config {
+        background-color: #2D586B;
+        border-color: #2D586B;
+        color: #ffffff;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+        .btn-set-config:hover {
+            background-color: #61A39D;
+            border-color: #61A39D;
+            color: #ffffff;
+        }
+
+    /* Class Selector */
+    .class-select-wrapper {
+        background-color: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Table Inputs */
+    .grade-input {
+        width: 80px;
+        text-align: center;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 4px;
+        font-size: 0.95rem;
+    }
+
+        .grade-input:focus {
+            border-color: #2D586B;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(45, 88, 107, 0.25);
+        }
+
+    /* Status Badges */
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-passed {
+        background-color: #198754;
+        color: #fff;
+    }
+
+    .status-failed {
+        background-color: #dc3545;
+        color: #fff;
+    }
+
+    .status-enrolled {
+        background-color: #6c757d;
+        color: #fff;
+    }
+</style>
+
+<div class="container-fluid pt-3">
+
+    <div class="schedule-filters">
+        <form method="get" class="d-flex align-items-center">
+            <div class="me-3">
+                <label for="SchoolYear" class="form-label mb-0 me-2"><strong>Academic Year</strong></label>
+                <select asp-for="SchoolYear" asp-items="Model.SchoolYears" class="form-select d-inline-block" style="width: 160px;"></select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Semester</label>
-                <select asp-for="Semester" asp-items="Model.Semesters" class="form-select"></select>
+            <div class="me-3">
+                <label for="Semester" class="form-label mb-0 me-2"><strong>Semester</strong></label>
+                <select asp-for="Semester" asp-items="Model.Semesters" class="form-select d-inline-block" style="width: 160px;"></select>
             </div>
-            <div class="col-md-4">
-                <label class="form-label">Select Class</label>
-                <select asp-for="ClassId" asp-items="Model.AvailableClasses" class="form-select" onchange="this.form.submit()">
-                    <option value="">-- Select Class --</option>
+            <button type="submit" class="btn btn-set-config btn-sm">
+                <i class="bi bi-gear-fill me-1"></i> Set Config
+            </button>
+        </form>
+    </div>
+
+    <div class="class-select-wrapper shadow-sm">
+        <form method="get" class="d-flex align-items-center gap-3">
+            <input type="hidden" asp-for="SchoolYear" />
+            <input type="hidden" asp-for="Semester" />
+
+            <div class="d-flex align-items-center flex-grow-1">
+                <label for="ClassId" class="form-label mb-0 me-3 fw-bold text-secondary" style="white-space: nowrap;">Select Class:</label>
+                <select asp-for="ClassId" asp-items="Model.ClassSelectList" class="form-select form-select-lg" onchange="this.form.submit()">
+                    <option value="">-- Click to Select a Class --</option>
                 </select>
             </div>
         </form>
     </div>
 
-    @if (Model.ClassId.HasValue && Model.ClassId.Value > 0)
+    @if (Model.ClassId.HasValue && Model.ClassId.Value > 0 && Model.SelectedClass != null)
     {
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">@Model.SubjectDescription</h5>
-                <span class="badge bg-light text-primary">@Model.GradesList.Count Students</span>
+        @if (TempData["Message"] != null)
+        {
+            <div class="alert alert-@TempData["MessageType"] alert-dismissible fade show" role="alert">
+                @TempData["Message"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-3" style="background-color: #0d6efd !important;">
+                <h5 class="mb-0 fw-bold">
+                    @Model.SelectedClass.SubjectCode - @Model.SelectedClass.CourseTitle
+                </h5>
+                <span class="badge bg-white text-primary">@Model.SelectedClass.TotalStudents Students</span>
             </div>
 
-            <div class="card-body">
-                <form method="post" asp-page-handler="UpdateAll">
+            <div class="card-body p-0">
+                <form method="post" asp-page-handler="SaveGrades">
                     <input type="hidden" asp-for="SchoolYear" />
                     <input type="hidden" asp-for="Semester" />
                     <input type="hidden" asp-for="ClassId" />
 
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle">
-                            <thead class="table-light text-center">
+                        <table class="table table-bordered table-hover align-middle mb-0">
+                            <thead class="bg-light text-center">
                                 <tr>
-                                    <th style="width: 15%">Student ID</th>
-                                    <th style="width: 35%">Student Name</th>
-                                    <th style="width: 15%">Midterm</th>
-                                    <th style="width: 15%">Final</th>
-                                    <th style="width: 15%">Average</th>
-                                    <th style="width: 10%">Status</th>
+                                    <th style="width: 15%;">Student ID</th>
+                                    <th style="text-align: left; width: 30%;">Student Name</th>
+                                    <th style="width: 15%;">Midterm</th>
+                                    <th style="width: 15%;">Final</th>
+                                    <th style="width: 15%;">Final Grade</th>
+                                    <th style="width: 10%;">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @for (int i = 0; i < Model.GradesList.Count; i++)
+                                @for (int i = 0; i < Model.StudentGrades.Count; i++)
                                 {
                                     <tr>
-                                        <input type="hidden" asp-for="GradesList[i].GradeId" />
+                                        <input type="hidden" asp-for="StudentGrades[i].EnrollmentId" />
 
-                                        <td class="text-center">@Model.GradesList[i].StudentNumber</td>
-                                        <td><strong>@Model.GradesList[i].StudentName</strong></td>
+                                        <td class="text-center fw-medium">@Model.StudentGrades[i].StudentIdStr</td>
+                                        <td class="fw-bold text-secondary">@Model.StudentGrades[i].StudentName</td>
 
-                                        <td>
-                                            <input asp-for="GradesList[i].Midterm" type="number" step="0.1" min="1.0" max="5.0" class="form-control text-center" placeholder="0.0" />
+                                        <td class="text-center">
+                                            <input type="number" step="0.01" min="0" max="100" asp-for="StudentGrades[i].Midterm" class="grade-input" placeholder="0.0" />
                                         </td>
-                                        <td>
-                                            <input asp-for="GradesList[i].Final" type="number" step="0.1" min="1.0" max="5.0" class="form-control text-center" placeholder="0.0" />
+                                        <td class="text-center">
+                                            <input type="number" step="0.01" min="0" max="100" asp-for="StudentGrades[i].Final" class="grade-input" placeholder="0.0" />
                                         </td>
-
-                                        <td class="text-center fw-bold">
-                                            @(Model.GradesList[i].FinalScore?.ToString("0.0") ?? "-")
+                                        <td class="text-center">
+                                            <input type="number" step="0.01" min="1.0" max="5.0" asp-for="StudentGrades[i].FinalGrade" class="grade-input fw-bold text-primary" placeholder="0.0" />
                                         </td>
 
                                         <td class="text-center">
-                                            @if (Model.GradesList[i].FinalScore.HasValue && Model.GradesList[i].FinalScore > 0)
-                                            {
-                                                if (Model.GradesList[i].FinalScore <= 3.0m)
-                                                {
-                                                    <span class="badge bg-success">PASSED</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-danger">FAILED</span>
-                                                }
+                                            @{
+                                                var statusClass = "status-enrolled";
+                                                if (Model.StudentGrades[i].Status == "Passed") statusClass = "status-passed";
+                                                else if (Model.StudentGrades[i].Status == "Failed") statusClass = "status-failed";
                                             }
-                                            else
-                                            {
-                                                <span class="badge bg-secondary">N/A</span>
-                                            }
+                                            <span class="status-badge @statusClass">@Model.StudentGrades[i].Status</span>
                                         </td>
                                     </tr>
                                 }
@@ -104,8 +182,8 @@
                         </table>
                     </div>
 
-                    <div class="text-end mt-3">
-                        <button type="submit" class="btn btn-success btn-lg">
+                    <div class="card-footer bg-white py-3 text-end border-top-0">
+                        <button type="submit" class="btn btn-success px-4 btn-lg shadow-sm">
                             <i class="bi bi-save me-2"></i> Save Grades
                         </button>
                     </div>
@@ -115,8 +193,13 @@
     }
     else
     {
-        <div class="alert alert-info text-center">
-            Please select a class to start grading.
+        <div class="text-center mt-5">
+            <div class="card shadow-sm d-inline-block p-5 border-0 bg-light">
+                <i class="bi bi-journal-text display-1 text-secondary opacity-25 mb-3"></i>
+                <h4 class="text-muted">Select a Class to Grade</h4>
+                <p class="text-secondary">Use the filters above to find and select a class section.</p>
+            </div>
         </div>
     }
+
 </div>
