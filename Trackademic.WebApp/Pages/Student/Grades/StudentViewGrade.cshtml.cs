@@ -1,134 +1,183 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.AspNetCore.Http;
-// --- FIXES ---
-using Trackademic.Core.Interfaces; // FIX: IGradeService location
-using Trackademic.Core.Models;    // FIX: Models location
-// --- END FIXES ---
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Trackademic.Data.Data;
 
-namespace Trackademic.Pages.Student
+namespace Trackademic.WebApp.Pages.Student.Grades
 {
     public class StudentViewGradeModel : PageModel
     {
-        private readonly IGradeService _gradeService;
+        private readonly TrackademicDbContext _context;
 
-        public StudentViewGradeModel(IGradeService gradeService)
+        public StudentViewGradeModel(TrackademicDbContext context)
         {
-            _gradeService = gradeService;
+            _context = context;
         }
 
-        // Grade display class
-        public class GradeDisplay
-        {
-            public int Id { get; set; }
-            public string SubjectCode { get; set; } = string.Empty; // Initialized
-            public string Description { get; set; } = string.Empty; // Initialized
-            public string FacultyName { get; set; } = string.Empty; // Initialized
-            public int Units { get; set; }
-            public string Midterm { get; set; } = string.Empty;
-            public string Final { get; set; } = string.Empty;
-            public decimal FinalGrade { get; set; }
-            public string Status { get; set; } = string.Empty;
-        }
-
-        // --- PROPERTIES INITIALIZED TO PREVENT WARNINGS ---
-        public List<GradeDisplay> Grades { get; set; } = new();
-        public decimal GPA { get; set; }
-        public int TotalUnits { get; set; }
-        public int PassedSubjects { get; set; }
-        public int FailedSubjects { get; set; }
-        public string ProgramName { get; set; } = string.Empty;
-        public string SelectedTermDisplay { get; set; } = string.Empty;
-
-        // Dropdowns
-        public List<SelectListItem> SchoolYears { get; set; } = new();
-        public List<SelectListItem> Semesters { get; set; } = new();
-        // --- END PROPERTY INITIALIZATION ---
+        // --- Filter Properties ---
+        [BindProperty(SupportsGet = true)]
+        public string SchoolYear { get; set; } = string.Empty;
 
         [BindProperty(SupportsGet = true)]
-        public string SchoolYear { get; set; } = "2024-2025";
+        public string Semester { get; set; } = string.Empty;
 
-        [BindProperty(SupportsGet = true)]
-        public string Semester { get; set; } = "1st Semester";
+        public List<SelectListItem> SchoolYears { get; set; } = new List<SelectListItem>();
+        public List<SelectListItem> Semesters { get; set; } = new List<SelectListItem>();
 
-        public void OnGet()
+        // --- Summary Data ---
+        public decimal SemesterGPA { get; set; } = 0.0m;
+        public int TotalUnits { get; set; } = 0;
+        public int SubjectsPassed { get; set; } = 0;
+        public int SubjectsFailed { get; set; } = 0;
+
+        // --- Table Data ---
+        public List<GradeViewModel> GradeList { get; set; } = new List<GradeViewModel>();
+
+        public async Task<IActionResult> OnGetAsync()
         {
-            LoadGrades();
-            LoadDropdowns();
-        }
-
-        private void LoadGrades()
-        {
-            // --- MOCK DATA ---
-            // This bypasses the service call to ensure the UI loads.
-            Grades = new List<GradeDisplay>
+            // 1. Authenticate
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!long.TryParse(userIdString, out long studentId))
             {
-                new GradeDisplay { Id = 1, SubjectCode = "CPE331", Description = "Data and Digital Communications", FacultyName = "SEMBLANTE, JULIAN N", Units = 3, Midterm = "4.4", Final = "4.4", FinalGrade = 4.4m, Status = "PASSED" },
-                new GradeDisplay { Id = 2, SubjectCode = "CPE333", Description = "Basic Occupational Safety and Health", FacultyName = "ALFEREZ, NIKKO", Units = 3, Midterm = "4.7", Final = "4.7", FinalGrade = 4.7m, Status = "PASSED" },
-                new GradeDisplay { Id = 3, SubjectCode = "CPE335", Description = "Feedback and Control Systems", FacultyName = "TAMPUS, MERVIN JOHN C", Units = 3, Midterm = "INC", Final = "5.0", FinalGrade = 5.0m, Status = "PASSED" },
-                new GradeDisplay { Id = 4, SubjectCode = "CPE361", Description = "Logic Circuits and Design", FacultyName = "CORTES, STEPHANie GRACE VILLARUBIA", Units = 4, Midterm = "4.6", Final = "4.7", FinalGrade = 4.7m, Status = "PASSED" },
-                new GradeDisplay { Id = 5, SubjectCode = "CPE363", Description = "Software Design", FacultyName = "CORTES, STEPHANIE GRACE VILLARUBIA", Units = 4, Midterm = "4.4", Final = "4.4", FinalGrade = 4.4m, Status = "PASSED" },
-                new GradeDisplay { Id = 6, SubjectCode = "CPE381", Description = "Computer Engineering Drafting and Design", FacultyName = "Alterado, Jundith Degala", Units = 1, Midterm = "4.0", Final = "4.7", FinalGrade = 4.7m, Status = "PASSED" },
-                new GradeDisplay { Id = 7, SubjectCode = "CPEPE361SD", Description = "Software Development 1", FacultyName = "Bultawe, Jovelyn Banguis", Units = 3, Midterm = "4.5", Final = "4.7", FinalGrade = 4.7m, Status = "PASSED" },
-                new GradeDisplay { Id = 8, SubjectCode = "ES038", Description = "Technopreneurship", FacultyName = "BARRIOQUINTO, ELLA MARIE Y", Units = 3, Midterm = "INC", Final = "4.6", FinalGrade = 4.6m, Status = "PASSED" }
-            };
-            // --- END OF MOCK DATA ---
-
-            CalculateStatistics();
-
-            ProgramName = "Bachelor of Science in Information Technology";
-            SelectedTermDisplay = $"{SchoolYear} - {Semester}";
-        }
-
-        private void CalculateStatistics()
-        {
-            if (Grades == null || !Grades.Any())
-            {
-                GPA = 0;
-                TotalUnits = 0;
-                PassedSubjects = 0;
-                FailedSubjects = 0;
-                return;
+                return RedirectToPage("/Account/Login");
             }
 
-            decimal totalGradePoints = 0;
-            TotalUnits = 0;
-            var gradedEntries = Grades.Where(g => g.Status != "INC" && g.Status != "N/A");
+            // 2. Populate Filters
+            var generatedYears = new List<SelectListItem>();
+            int currentYear = DateTime.Now.Year;
+            if (DateTime.Now.Month < 6) currentYear--;
 
-            foreach (var grade in gradedEntries)
+            for (int i = 0; i <= 7; i++)
             {
-                totalGradePoints += grade.FinalGrade * grade.Units;
-                TotalUnits += grade.Units;
+                int startYear = currentYear - i;
+                string syLabel = $"{startYear}-{startYear + 1}";
+                generatedYears.Add(new SelectListItem { Value = syLabel, Text = syLabel });
             }
-
-            GPA = TotalUnits > 0 ? totalGradePoints / TotalUnits : 0;
-            PassedSubjects = Grades.Count(g => g.Status == "PASSED");
-            FailedSubjects = Grades.Count(g => g.Status == "FAILED");
-        }
-
-        private void LoadDropdowns()
-        {
-            SchoolYears = new List<SelectListItem>
-            {
-                new SelectListItem { Value = "2029-2030", Text = "2029-2030" },
-                new SelectListItem { Value = "2028-2029", Text = "2028-2029" },
-                new SelectListItem { Value = "2027-2028", Text = "2027-2028" },
-                new SelectListItem { Value = "2026-2027", Text = "2026-2027" },
-                new SelectListItem { Value = "2025-2026", Text = "2025-2026" },
-                new SelectListItem { Value = "2024-2025", Text = "2024-2025" },
-                new SelectListItem { Value = "2023-2024", Text = "2023-2024" },
-                new SelectListItem { Value = "2022-2023", Text = "2022-2023" }
-            };
+            SchoolYears = generatedYears;
 
             Semesters = new List<SelectListItem>
             {
-                new SelectListItem { Value = "1st Semester", Text = "1st Semester" },
-                new SelectListItem { Value = "2nd Semester", Text = "2nd Semester" },
-                new SelectListItem { Value = "Summer", Text = "Summer" }
+                new SelectListItem { Value = "First", Text = "First" },
+                new SelectListItem { Value = "Second", Text = "Second" },
+                new SelectListItem { Value = "Summer", Text = "Summer" },
             };
+
+            // 3. Set Defaults
+            if (string.IsNullOrEmpty(SchoolYear)) SchoolYear = SchoolYears.FirstOrDefault()?.Value ?? "2024-2025";
+            if (string.IsNullOrEmpty(Semester)) Semester = "First";
+
+            // 4. Fetch Data
+            var enrollments = await _context.Classenrollments
+                .Where(ce => ce.StudentId == studentId)
+                .Where(ce => ce.Class.SchoolYear.YearName == SchoolYear)
+                .Where(ce => ce.Class.Semester.SemesterName.Contains(Semester))
+                .Include(ce => ce.Class).ThenInclude(c => c.Subject)
+                .Include(ce => ce.Class).ThenInclude(c => c.Classassignments).ThenInclude(ca => ca.Teacher)
+                .Include(ce => ce.Grade)
+                .ToListAsync();
+
+            // 5. Process Data
+            decimal totalGradePoints = 0;
+            int totalUnitsForGpa = 0;
+
+            foreach (var enrollment in enrollments)
+            {
+                // Determine Teacher Name
+                string teacherName = enrollment.Class.Classassignments.Any() && enrollment.Class.Classassignments.First().Teacher != null
+                    ? $"{enrollment.Class.Classassignments.First().Teacher.FirstName} {enrollment.Class.Classassignments.First().Teacher.LastName}"
+                    : "TBA";
+
+                // Get Units
+                int units = enrollment.Class.Subject.CreditUnits ?? 3;
+
+                // --- GRADE MAPPING ---
+                string midtermDisplay = "N/A";
+                string finalTermDisplay = "N/A";
+                string finalGradeDisplay = "N/A";
+
+                string remarks = "Enrolled";
+                decimal finalGradeValue = 0;
+                bool hasGrade = false;
+
+                if (enrollment.Grade != null)
+                {
+                    // 1. Midterm
+                    if (enrollment.Grade.MidtermGrade.HasValue)
+                    {
+                        midtermDisplay = enrollment.Grade.MidtermGrade.Value.ToString("0.00");
+                    }
+
+                    // 2. Final Score (The grade for the final period)
+                    if (enrollment.Grade.FinalScore.HasValue)
+                    {
+                        finalTermDisplay = enrollment.Grade.FinalScore.Value.ToString("0.00");
+                    }
+
+                    // 3. Final Grade (The computed grade)
+                    if (enrollment.Grade.FinalGrade.HasValue)
+                    {
+                        finalGradeValue = enrollment.Grade.FinalGrade.Value;
+                        finalGradeDisplay = finalGradeValue.ToString("0.00");
+                        hasGrade = true;
+
+                        // Pass/Fail Logic
+                        if (finalGradeValue <= 3.0m) remarks = "Passed";
+                        else remarks = "Failed";
+                    }
+                }
+
+                GradeList.Add(new GradeViewModel
+                {
+                    SubjectCode = enrollment.Class.Subject.SubjectCode ?? "---",
+                    Description = enrollment.Class.Subject.SubjectName ?? "Unknown",
+                    Units = units,
+
+                    Midterm = midtermDisplay,    // New
+                    FinalTerm = finalTermDisplay,// New
+                    FinalGrade = finalGradeDisplay, // Renamed from 'Grade'
+
+                    Remarks = remarks,
+                    Faculty = teacherName
+                });
+
+                // Update Stats
+                TotalUnits += units;
+                if (hasGrade)
+                {
+                    totalGradePoints += (finalGradeValue * units);
+                    totalUnitsForGpa += units;
+
+                    if (remarks == "Passed") SubjectsPassed++;
+                    if (remarks == "Failed") SubjectsFailed++;
+                }
+            }
+
+            if (totalUnitsForGpa > 0)
+            {
+                SemesterGPA = totalGradePoints / totalUnitsForGpa;
+            }
+
+            return Page();
         }
+    }
+
+    public class GradeViewModel
+    {
+        public string SubjectCode { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public int Units { get; set; }
+
+        public string Midterm { get; set; } = string.Empty; // New
+        public string FinalTerm { get; set; } = string.Empty; // New
+        public string FinalGrade { get; set; } = string.Empty; // Previously 'Grade'
+
+        public string Remarks { get; set; } = string.Empty;
+        public string Faculty { get; set; } = string.Empty;
     }
 }
